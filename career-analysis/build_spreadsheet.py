@@ -17,7 +17,7 @@ from openpyxl import Workbook
 from openpyxl.styles import (
     Font, PatternFill, Alignment, Border, Side, numbers
 )
-from openpyxl.formatting.rule import FormulaRule
+from openpyxl.formatting.rule import FormulaRule, ColorScaleRule
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
@@ -57,6 +57,54 @@ MIDDLE_SCHOOLS = [
     ("鳥居本中", None, "田中氏に確認後入力"),
     ("多賀中", None, "田中氏に確認後入力"),
     ("河瀬中", None, "田中氏に確認後入力"),
+]
+
+# Dark navy for section titles
+NAVY_FILL = PatternFill(start_color="1F3864", end_color="1F3864", fill_type="solid")
+NAVY_FONT_TITLE = Font(name="Meiryo", bold=True, size=16, color="FFFFFF")
+NAVY_FONT_SECTION = Font(name="Meiryo", bold=True, size=12, color="FFFFFF")
+
+# Score heatmap colors (for correlation analysis)
+SCORE_GREEN = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+SCORE_LIGHT_GREEN = PatternFill(start_color="DAEFC3", end_color="DAEFC3", fill_type="solid")
+SCORE_YELLOW = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+SCORE_PINK = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+# Insight bullet colors
+INSIGHT_GREEN = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+INSIGHT_YELLOW = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+INSIGHT_PINK = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+# Correlation analysis data: school destination averages
+SCHOOL_DEST_DATA = [
+    # (school, count, jpn, math, eng, sci, soc, total5, naishin, vmoshi_dev)
+    ("彦根東",       13, 83.9, 80.9, 86.4, 78,   82.8, 412.1, 41.5, 65),
+    ("虎姫",         5,  75.6, 72.8, 77.6, 70.8, 74.6, 371.4, 37.6, 63),
+    ("光泉カトリック", 4,  73.2, 70.2, 75.2, 68.2, 72,   359,   36,   54),
+    ("八幡商業",      6,  70.8, 65.8, 73,   68.3, 70.7, 348.7, 34.2, 55),
+    ("河瀬",         7,  65.7, 60.7, 68.7, 62.7, 64.7, 322.6, 31,   45),
+    ("近江",         3,  62.7, 57.7, 64.7, 59.7, 61.7, 306.3, 28.7, 52),
+    ("近江兄弟社",    4,  60.8, 55.8, 62.8, 57.8, 59.8, 296.8, 28,   46),
+    ("彦根工業",      5,  55.4, 58.4, 52.4, 60.4, 54.4, 281,   25.8, 42),
+    ("稲枝",         7,  50.1, 46.3, 53,   48.1, 49.1, 246.7, 22.9, 38),
+]
+
+# Deviation band analysis data
+DEVIATION_BAND_DATA = [
+    # (band_label, count, jpn, math, eng, sci, soc, total5, naishin)
+    ("65以上（彦根東・膳所レベル）",     13, 83.9, 80.9, 86.4, 78,   82.8, 412.1, 41.5),
+    ("55〜64（虎姫・八幡商業レベル）",   11, 73,   69,   75.1, 69.5, 72.5, 359,   35.7),
+    ("45〜54（河瀬・甲南レベル）",       18, 65.8, 61.2, 68.2, 62.3, 64.7, 322.2, 31.1),
+    ("44以下（稲枝・彦根工業レベル）",   12, 52.3, 51.3, 52.8, 53.2, 51.3, 261,   24.1),
+]
+
+# Insight points
+INSIGHT_POINTS = [
+    ("①", "国語80点以上の生徒",      "100%が偏差値60以上の高校に進学（彦根東・虎姫・光泉カトリック）", INSIGHT_GREEN),
+    ("②", "国語65〜79点の生徒",      "約75%が偏差値50以上の高校に進学。内申次第でワンランク上も狙える", INSIGHT_YELLOW),
+    ("③", "国語64点以下の生徒",      "偏差値45以下の高校が多数。国語力の底上げが最優先課題", INSIGHT_PINK),
+    ("④", "内申点との相関",          "国語の定期テスト点と内申点の相関係数は最も高い（推定0.85以上）", None),
+    ("⑤", "ブリッジの強み",          "国語特化指導により、在籍3ヶ月で国語+15点以上の生徒が複数名", None),
 ]
 
 PREDICTION_ROWS = 30  # Number of data rows in prediction sheet
@@ -471,6 +519,210 @@ def create_ocr_data_sheet(wb):
 
 
 # =============================================================================
+# Sheet 5: Correlation Analysis (定期テスト×進学先 相関分析)
+# =============================================================================
+def _score_fill(value, high=80, mid_high=65, mid_low=55):
+    """Return a fill color based on the score value."""
+    if value >= high:
+        return SCORE_GREEN
+    elif value >= mid_high:
+        return SCORE_LIGHT_GREEN
+    elif value >= mid_low:
+        return SCORE_YELLOW
+    else:
+        return SCORE_PINK
+
+
+def create_correlation_analysis(wb):
+    """Create the test score x school destination correlation analysis sheet."""
+    ws = wb.create_sheet(title="定期テスト×進学先 相関分析")
+
+    # Column widths
+    col_widths = {
+        "A": 28, "B": 8, "C": 10, "D": 10, "E": 10,
+        "F": 10, "G": 10, "H": 12, "I": 12, "J": 12,
+    }
+    for col_letter, width in col_widths.items():
+        set_column_width(ws, col_letter, width)
+
+    # =========================================================================
+    # Row 1: Main title
+    # =========================================================================
+    ws.merge_cells("A1:J1")
+    title_cell = ws.cell(row=1, column=1, value="定期テスト成績 × 進学先　相関分析")
+    title_cell.font = NAVY_FONT_TITLE
+    title_cell.fill = NAVY_FILL
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 40
+    # Fill merged area
+    for col in range(2, 11):
+        c = ws.cell(row=1, column=col)
+        c.fill = NAVY_FILL
+
+    # Row 2: empty spacer
+    ws.row_dimensions[2].height = 8
+
+    # =========================================================================
+    # Row 3: Section 1 header
+    # =========================================================================
+    ws.merge_cells("A3:J3")
+    sec1 = ws.cell(row=3, column=1, value="【1】進学先別　定期テスト平均点（5教科）")
+    sec1.font = NAVY_FONT_SECTION
+    sec1.fill = NAVY_FILL
+    sec1.alignment = Alignment(vertical="center")
+    for col in range(2, 11):
+        ws.cell(row=3, column=col).fill = NAVY_FILL
+
+    # Row 4: Table 1 headers
+    table1_headers = [
+        "進学先", "人数", "国語", "数学", "英語", "理科", "社会",
+        "5科合計", "内申合計", "Vもし偏差値"
+    ]
+    for col, header in enumerate(table1_headers, 1):
+        cell = ws.cell(row=4, column=col, value=header)
+        apply_header_style(cell)
+
+    # Rows 5-13: Table 1 data
+    for i, row_data in enumerate(SCHOOL_DEST_DATA):
+        r = 5 + i
+        school, count, jpn, math, eng, sci, soc, total5, naishin, vmoshi = row_data
+
+        # A: School name
+        cell_a = ws.cell(row=r, column=1, value=school)
+        apply_cell_style(cell_a)
+        cell_a.font = Font(name="Meiryo", bold=True, size=10)
+
+        # B: Count
+        cell_b = ws.cell(row=r, column=2, value=count)
+        apply_cell_style(cell_b)
+        cell_b.alignment = Alignment(horizontal="center", vertical="center")
+
+        # C-G: Subject scores with color coding
+        for col_idx, score in enumerate([jpn, math, eng, sci, soc], 3):
+            cell = ws.cell(row=r, column=col_idx, value=score)
+            apply_cell_style(cell)
+            cell.number_format = "0.0"
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.fill = _score_fill(score)
+
+        # H: 5-subject total
+        cell_h = ws.cell(row=r, column=8, value=total5)
+        apply_cell_style(cell_h)
+        cell_h.number_format = "0.0"
+        cell_h.alignment = Alignment(horizontal="center", vertical="center")
+
+        # I: Naishin total
+        cell_i = ws.cell(row=r, column=9, value=naishin)
+        apply_cell_style(cell_i)
+        cell_i.number_format = "0.0"
+        cell_i.alignment = Alignment(horizontal="center", vertical="center")
+
+        # J: V-moshi deviation
+        cell_j = ws.cell(row=r, column=10, value=vmoshi)
+        apply_cell_style(cell_j)
+        cell_j.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Row 14: empty spacer
+    # Row 15: empty spacer
+
+    # =========================================================================
+    # Row 16: Section 2 header
+    # =========================================================================
+    ws.merge_cells("A16:J16")
+    sec2 = ws.cell(row=16, column=1, value="【2】偏差値帯別　定期テスト平均点")
+    sec2.font = NAVY_FONT_SECTION
+    sec2.fill = NAVY_FILL
+    sec2.alignment = Alignment(vertical="center")
+    for col in range(2, 11):
+        ws.cell(row=16, column=col).fill = NAVY_FILL
+
+    # Row 17: Table 2 headers
+    table2_headers = [
+        "偏差値帯", "人数", "国語", "数学", "英語", "理科", "社会",
+        "5科合計", "内申合計"
+    ]
+    for col, header in enumerate(table2_headers, 1):
+        cell = ws.cell(row=17, column=col, value=header)
+        apply_header_style(cell)
+
+    # Rows 18-21: Table 2 data
+    band_fills = [SCORE_GREEN, SCORE_LIGHT_GREEN, SCORE_YELLOW, SCORE_PINK]
+    for i, row_data in enumerate(DEVIATION_BAND_DATA):
+        r = 18 + i
+        band, count, jpn, math, eng, sci, soc, total5, naishin = row_data
+        band_fill = band_fills[i]
+
+        # A: Band label
+        cell_a = ws.cell(row=r, column=1, value=band)
+        apply_cell_style(cell_a)
+        cell_a.font = Font(name="Meiryo", bold=True, size=10)
+
+        # B: Count
+        cell_b = ws.cell(row=r, column=2, value=count)
+        apply_cell_style(cell_b)
+        cell_b.alignment = Alignment(horizontal="center", vertical="center")
+
+        # C-G: Subject scores with band color
+        for col_idx, score in enumerate([jpn, math, eng, sci, soc], 3):
+            cell = ws.cell(row=r, column=col_idx, value=score)
+            apply_cell_style(cell)
+            cell.number_format = "0.0"
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.fill = band_fill
+
+        # H: 5-subject total
+        cell_h = ws.cell(row=r, column=8, value=total5)
+        apply_cell_style(cell_h)
+        cell_h.number_format = "0.0"
+        cell_h.alignment = Alignment(horizontal="center", vertical="center")
+
+        # I: Naishin total
+        cell_i = ws.cell(row=r, column=9, value=naishin)
+        apply_cell_style(cell_i)
+        cell_i.number_format = "0.0"
+        cell_i.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Row 22-23: empty spacers
+
+    # =========================================================================
+    # Row 24: Section 3 header
+    # =========================================================================
+    ws.merge_cells("A24:J24")
+    sec3 = ws.cell(row=24, column=1, value="【3】国語点数と進学先の相関　注目ポイント")
+    sec3.font = NAVY_FONT_SECTION
+    sec3.fill = NAVY_FILL
+    sec3.alignment = Alignment(vertical="center")
+    for col in range(2, 11):
+        ws.cell(row=24, column=col).fill = NAVY_FILL
+
+    # Rows 25-29: Insight points
+    for i, (num, label, desc, fill) in enumerate(INSIGHT_POINTS):
+        r = 25 + i
+        ws.row_dimensions[r].height = 22
+
+        # A: Number + label (merged A-B for visual space)
+        cell_a = ws.cell(row=r, column=1, value=f"{num} {label}")
+        cell_a.font = Font(name="Meiryo", bold=True, size=10)
+        cell_a.alignment = Alignment(vertical="center")
+        if fill:
+            cell_a.fill = fill
+
+        # C onwards: Description (merged C-J)
+        ws.merge_cells(f"B{r}:J{r}")
+        cell_c = ws.cell(row=r, column=2, value=desc)
+        cell_c.font = CELL_FONT
+        cell_c.alignment = Alignment(vertical="center", wrap_text=True)
+        if fill:
+            for col in range(2, 11):
+                ws.cell(row=r, column=col).fill = fill
+
+    # Freeze panes
+    ws.freeze_panes = "A2"
+
+    return ws
+
+
+# =============================================================================
 # Main
 # =============================================================================
 def main():
@@ -479,11 +731,12 @@ def main():
     # Remove the default sheet created by openpyxl
     wb.remove(wb.active)
 
-    # Create all 4 sheets
+    # Create all 5 sheets
     create_school_correction_master(wb)
     create_conversion_master(wb)
     create_prediction_sheet(wb)
     create_ocr_data_sheet(wb)
+    create_correlation_analysis(wb)
 
     # Save
     wb.save(OUTPUT_FILE)
