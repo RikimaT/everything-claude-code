@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ブリッジ勤怠管理 - スタッフ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Sans', sans-serif; background: #f5f5f5; font-size: 16px; }
+
+    /* ログイン */
+    #loginScreen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #1a73e8;
+    }
+    .login-card {
+      background: white; padding: 2rem; border-radius: 8px;
+      width: 320px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .login-card h1 { font-size: 1.4rem; margin-bottom: 1.5rem; color: #333; text-align: center; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 4px; font-size: 0.9rem; color: #555; }
+    .form-group input {
+      width: 100%; padding: 8px 12px; border: 1px solid #ccc;
+      border-radius: 4px; font-size: 1rem;
+    }
+    .btn-primary {
+      width: 100%; padding: 10px; background: #1a73e8; color: white;
+      border: none; border-radius: 4px; font-size: 1rem; cursor: pointer;
+    }
+    .btn-primary:hover { background: #1557b0; }
+    .error-msg { color: red; font-size: 0.85rem; margin-top: 8px; display: none; }
+
+    /* メイン */
+    #mainScreen { min-height: 100vh; }
+    .header {
+      background: #1a73e8; color: white; padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header h2 { font-size: 1.1rem; }
+    .logout-btn {
+      background: rgba(255,255,255,0.2); color: white; border: none;
+      padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+    }
+
+    /* タブ */
+    .tab-nav { display: flex; background: white; border-bottom: 2px solid #e0e0e0; }
+    .tab-nav button {
+      flex: 1; padding: 12px; border: none; background: none; cursor: pointer;
+      font-size: 0.9rem; color: #666; border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-nav button.active { color: #1a73e8; border-bottom-color: #1a73e8; font-weight: bold; }
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* 履歴 */
+    .hist-controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .hist-controls select { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; }
+    .hist-controls button {
+      padding: 6px 16px; background: #1a73e8; color: white;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem;
+    }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th { background: #f0f4ff; padding: 10px 8px; text-align: center; font-size: 0.85rem; color: #444; }
+    td { padding: 10px 8px; text-align: center; font-size: 0.9rem; border-top: 1px solid #f0f0f0; }
+
+    /* 打刻 */
+    .clock-panel {
+      background: white; border-radius: 8px; padding: 24px;
+      text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto;
+    }
+    .clock-display { font-size: 2.5rem; font-weight: bold; color: #333; margin: 16px 0; letter-spacing: 2px; }
+    .clock-btns { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+    .clock-btn {
+      padding: 14px 28px; font-size: 1.1rem; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: bold;
+    }
+    .clock-btn.in  { background: #34a853; color: white; }
+    .clock-btn.out { background: #ea4335; color: white; }
+    .clock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-msg { margin-top: 12px; font-size: 0.95rem; color: #555; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+
+<!-- ==============================
+     ログイン画面
+     ============================== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>ブリッジ勤怠管理</h1>
+    <div class="form-group">
+      <label>スタッフID</label>
+      <input type="text" id="loginStaffId" placeholder="例: STF001" autocomplete="off"
+             onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">ログイン</button>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- ==============================
+     メイン画面
+     ============================== -->
+<div id="mainScreen" style="display:none;">
+  <div class="header">
+    <h2 id="headerName">スタッフ名</h2>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+  </div>
+
+  <div class="tab-nav">
+    <button id="tab-clock"   onclick="switchTab('clock')"   class="active">出勤打刻</button>
+    <button id="tab-history" onclick="switchTab('history')">履歴</button>
+    <button id="tab-fix"     onclick="switchTab('fix')">修正申請</button>
+  </div>
+
+  <!-- 出勤打刻 -->
+  <div id="content-clock" class="tab-content active">
+    <div class="clock-panel">
+      <div id="clockDisplay" class="clock-display">--:--:--</div>
+      <div class="clock-btns">
+        <button class="clock-btn in"  onclick="doClock('in')">出勤</button>
+        <button class="clock-btn out" onclick="doClock('out')">退勤</button>
+      </div>
+      <div id="clockStatus" class="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- 履歴 -->
+  <div id="content-history" class="tab-content">
+    <div class="hist-controls">
+      <select id="histYear"></select>
+      <select id="histMonth"></select>
+      <button onclick="loadHistory()">表示</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>日付</th><th>出勤</th><th>退勤</th><th>備考</th></tr>
+      </thead>
+      <tbody id="histBody">
+        <tr><td colspan="4" style="color:#888;">「表示」ボタンを押してください</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 修正申請 -->
+  <div id="content-fix" class="tab-content">
+    <p style="color:#666; padding: 16px;">修正申請機能は準備中です</p>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// グローバル: ログインセッション
+// GAS WebApp では localStorage が制限されるため JS グローバル変数で管理する
+// ================================================================
+var currentStaff = null;  // {staffId, name, email}
+
+// ================================================================
+// 時計
+// ================================================================
+function startClock() {
+  function tick() {
+    var now = new Date();
+    var h = String(now.getHours()  ).padStart(2, '0');
+    var m = String(now.getMinutes()).padStart(2, '0');
+    var s = String(now.getSeconds()).padStart(2, '0');
+    var el = document.getElementById('clockDisplay');
+    if (el) el.textContent = h + ':' + m + ':' + s;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ================================================================
+// ログイン / ログアウト
+// ================================================================
+function doLogin() {
+  var staffId = document.getElementById('loginStaffId').value.trim();
+  var errEl   = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if (!staffId) {
+    errEl.textContent    = 'スタッフIDを入力してください';
+    errEl.style.display  = 'block';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (!result || !result.success) {
+        errEl.textContent   = (result && result.error) ? result.error : 'ログインに失敗しました';
+        errEl.style.display = 'block';
+        return;
+      }
+      // セッションセット: result.staff = {staffId, name, email}
+      currentStaff = result.staff;
+      document.getElementById('headerName').textContent = currentStaff.name + ' さん';
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen' ).style.display = 'block';
+      initYearMonthSelectors();
+      startClock();
+    })
+    .withFailureHandler(function(e) {
+      errEl.textContent   = '通信エラー: ' + (e && e.message ? e.message : String(e));
+      errEl.style.display = 'block';
+    })
+    .loginStaff({ staffId: staffId });
+}
+
+function doLogout() {
+  currentStaff = null;
+  document.getElementById('mainScreen' ).style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginStaffId').value = '';
+}
+
+// ================================================================
+// タブ切替
+// ================================================================
+function switchTab(name) {
+  ['clock', 'history', 'fix'].forEach(function(t) {
+    document.getElementById('content-' + t).classList.toggle('active', t === name);
+    document.getElementById('tab-'     + t).classList.toggle('active', t === name);
+  });
+  if (name === 'history') {
+    loadHistory();
+  }
+}
+
+// ================================================================
+// 年月セレクター初期化
+// ================================================================
+function initYearMonthSelectors() {
+  var now     = new Date();
+  var yearEl  = document.getElementById('histYear');
+  var monthEl = document.getElementById('histMonth');
+
+  yearEl.innerHTML = '';
+  for (var y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+    var o = document.createElement('option');
+    o.value       = y;
+    o.textContent = y + '年';
+    if (y === now.getFullYear()) o.selected = true;
+    yearEl.appendChild(o);
+  }
+
+  monthEl.innerHTML = '';
+  for (var m = 1; m <= 12; m++) {
+    var o2 = document.createElement('option');
+    o2.value       = m;
+    o2.textContent = m + '月';
+    if (m === now.getMonth() + 1) o2.selected = true;
+    monthEl.appendChild(o2);
+  }
+}
+
+// ================================================================
+// 履歴読み込み  ← バグ修正の核心
+//
+// 修正内容:
+//  - currentStaff.staffId を params.staffId として明示的に渡す (仮説A対策)
+//  - currentStaff が null の場合は早期リターンしてセッションエラーを表示
+//  - result が null の場合と result.success:false の場合を分離して表示
+// ================================================================
+function loadHistory() {
+  var histBody = document.getElementById('histBody');
+  histBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">読み込み中...</td></tr>';
+
+  // セッション確認: currentStaff は doLogin() の成功時にセットされる
+  if (!currentStaff || !currentStaff.staffId) {
+    histBody.innerHTML =
+      '<tr><td colspan="4" style="color:red;">' +
+      'セッションエラー: 再ログインしてください' +
+      '</td></tr>';
+    return;
+  }
+
+  var yearEl  = document.getElementById('histYear');
+  var monthEl = document.getElementById('histMonth');
+  var now     = new Date();
+
+  var params = {
+    staffId: currentStaff.staffId,                                    // ← 必ず staffId キーで渡す
+    year:    yearEl  ? parseInt(yearEl.value,  10) : now.getFullYear(),
+    month:   monthEl ? parseInt(monthEl.value, 10) : now.getMonth() + 1
+  };
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result === null || result === undefined) {
+        // 仮説D の場合: Fix.gs 等の別関数が undefined を返す → null として届く
+        histBody.innerHTML =
+          '<tr><td colspan="4" style="color:red;">' +
+          'サーバーがnullを返しました。' +
+          'GASエディタで全ファイルを "function getMonthlyRecords" で検索し、' +
+          'Staff.gs 以外に同名関数がないか確認してください（仮説D）。' +
+          '</td></tr>';
+        return;
+      }
+      if (!result.success) {
+        histBody.innerHTML =
+          '<tr><td colspan="4" style="color:red;">エラー: ' +
+          (result.error || '不明なエラー') +
+          '</td></tr>';
+        return;
+      }
+      renderHistory(result.records || []);
+    })
+    .withFailureHandler(function(e) {
+      histBody.innerHTML =
+        '<tr><td colspan="4" style="color:red;">通信エラー: ' +
+        (e && e.message ? e.message : String(e)) +
+        '</td></tr>';
+    })
+    .getMonthlyRecords(params);
+}
+
+function renderHistory(records) {
+  var histBody = document.getElementById('histBody');
+  if (!records || records.length === 0) {
+    histBody.innerHTML =
+      '<tr><td colspan="4" style="text-align:center;color:#888;">該当月のデータがありません</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    html += '<tr>'
+      + '<td>' + (r.date     || '') + '</td>'
+      + '<td>' + (r.clockIn  || '') + '</td>'
+      + '<td>' + (r.clockOut || '') + '</td>'
+      + '<td>' + (r.note     || '') + '</td>'
+      + '</tr>';
+  }
+  histBody.innerHTML = html;
+}
+
+// ================================================================
+// 出勤打刻
+// ================================================================
+function doClock(type) {
+  if (!currentStaff) return;
+  var statusEl = document.getElementById('clockStatus');
+  statusEl.textContent = '送信中...';
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (!result || !result.success) {
+        statusEl.textContent = 'エラー: ' + (result && result.error ? result.error : '不明');
+        return;
+      }
+      statusEl.textContent = (type === 'in' ? '出勤' : '退勤') + 'を記録しました: ' + result.time;
+    })
+    .withFailureHandler(function(e) {
+      statusEl.textContent = '通信エラー: ' + (e && e.message ? e.message : String(e));
+    })
+    .clockAction({ staffId: currentStaff.staffId, type: type });
+}
+</script>
+</body>
+</html>
