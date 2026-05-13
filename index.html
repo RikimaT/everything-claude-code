@@ -361,6 +361,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('r-join').value=new Date().toISOString().slice(0,10);
   document.getElementById('tr-date').value=new Date().toISOString().slice(0,10);
   _initDashMonth();
+  renderDashboard();
   loadTargets();
   loadSchools();
   loadCourses();
@@ -596,7 +597,12 @@ function renderDashboard(){
   _initDashMonth();
   var yr=dashYear,mo=dashMonth;
   var active=ALL_STUDENTS.filter(function(s){return s.isActive;});
-  var activeEnrolls=ALL_ENROLL.filter(function(e){return e.isActive;});
+  var monthStart=new Date(yr,mo-1,1),monthEnd=new Date(yr,mo,0);
+  var activeEnrolls=ALL_ENROLL.filter(function(e){
+    if(!e.isActive)return false;
+    var jd=new Date(e.joinDate),ld=e.leaveDate?new Date(e.leaveDate):null;
+    return jd<=monthEnd&&(!ld||ld>=monthStart);
+  });
   var monthlyTotal=activeEnrolls.reduce(function(s,e){return s+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
   var now=new Date();
   var joins=ALL_STUDENTS.filter(function(s){if(!s.joinDate)return false;var d=new Date(s.joinDate);return d.getFullYear()===yr&&d.getMonth()===mo-1;}).length;
@@ -646,13 +652,22 @@ function buildDashTrendChart(){
 function buildCourseDistChart() {
   const el = document.getElementById('course-dist');
   if (!el) return;
+  _initDashMonth();
+  const yr = dashYear, mo = dashMonth;
+  const monthStart = new Date(yr, mo-1, 1);
+  const monthEnd = new Date(yr, mo, 0);
 
   const CATS     = ['そろばん', '算数', '国語', '塾'];
   const PATTERNS = [/そろばん/, /算数/, /国語/, /ブリッジ/];
   const COLORS   = ['#e8a84c', '#3fb950', '#58a6ff', '#f85149'];
 
   const totals = [0, 0, 0, 0];
-  ALL_ENROLL.filter(e => e.isActive).forEach(e => {
+  ALL_ENROLL.filter(e => {
+    if (!e.isActive) return false;
+    const jd = new Date(e.joinDate);
+    const ld = e.leaveDate ? new Date(e.leaveDate) : null;
+    return jd <= monthEnd && (!ld || ld >= monthStart);
+  }).forEach(e => {
     const price = (e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0;
     if (!price) return;
     for (let i = 0; i < PATTERNS.length; i++) {
