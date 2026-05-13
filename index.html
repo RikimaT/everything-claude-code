@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bridge 生徒管理</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--accent:#e8a84c;--accent2:#f0c97a;--text:#e6edf3;--muted:#8b949e;--ok:#3fb950;--ng:#f85149;--r:12px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;min-height:100vh;font-family:"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 20% 10%,rgba(232,168,76,.07),transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(63,185,80,.05),transparent 50%);}
+header{text-align:center;padding:24px 16px 0;}
+.logo{font-family:"DM Serif Display",serif;font-size:30px;color:var(--accent);letter-spacing:2px;}
+.sub{font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:4px;text-transform:uppercase;}
+.tabs{display:flex;gap:3px;padding:16px 10px 0;max-width:680px;margin:0 auto;}
+.tab{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px 10px 0 0;color:var(--muted);padding:12px 2px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;border-bottom:none;text-align:center;min-height:46px;display:flex;align-items:center;justify-content:center;}
+.tab.active{background:var(--surface2);color:var(--accent);border-color:var(--accent);border-bottom-color:var(--surface2);}
+.box{max-width:680px;margin:0 auto;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);padding:20px 14px 60px;}
+.pane{display:none;}.pane.active{display:block;}
+.stitle{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.stitle::after{content:"";flex:1;height:1px;background:var(--border);}
+.field{margin-bottom:14px;}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+input[type=text],input[type=date],input[type=tel],select,input[type=search]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:13px;font-family:inherit;font-size:16px;transition:border-color .2s;appearance:none;-webkit-appearance:none;}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,168,76,.15);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b949e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{width:100%;padding:15px;border:none;border-radius:10px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;min-height:52px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-danger{background:rgba(248,81,73,.15);border:1px solid var(--ng);color:var(--ng);}
+.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--muted);}
+.btn-sm{padding:8px 12px;font-size:12px;min-height:34px;border-radius:6px;width:auto;font-weight:600;}
+.ctabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;padding-bottom:4px;scrollbar-width:none;}
+.ctabs::-webkit-scrollbar{display:none;}
+.ctab{background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--muted);padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;min-height:38px;transition:all .2s;}
+.ctab.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
+.cgrid{display:grid;grid-template-columns:1fr;gap:8px;}
+@media(min-width:420px){.cgrid{grid-template-columns:1fr 1fr;}}
+.citem{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:56px;transition:all .15s;}
+.citem.sel{border-color:var(--accent);background:rgba(232,168,76,.1);}
+.cname{font-size:13px;line-height:1.4;}
+.cprice{font-size:12px;color:var(--accent2);white-space:nowrap;font-weight:600;}
+.ccheck{width:20px;height:20px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.citem.sel .ccheck{background:var(--accent);border-color:var(--accent);color:#000;}
+.stags{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;}
+.stag{display:inline-flex;align-items:center;gap:5px;background:rgba(232,168,76,.12);border:1px solid rgba(232,168,76,.3);border-radius:20px;padding:5px 10px 5px 12px;font-size:13px;}
+.stag button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:18px;line-height:1;padding:0;min-width:26px;min-height:26px;}
+.total-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 18px;}
+.total-val{font-size:24px;font-weight:700;color:var(--accent);}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.scard-head{padding:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.sname{font-size:16px;font-weight:700;}
+.sinfo{font-size:12px;color:var(--muted);margin-top:3px;}
+.stotal{font-size:16px;font-weight:700;color:var(--accent2);white-space:nowrap;}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;}
+.badge-ok{background:rgba(63,185,80,.15);color:var(--ok);}
+.scard-detail{display:none;border-top:1px solid var(--border);padding:12px 14px;}
+.scard-detail.open{display:block;}
+.enroll-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:6px;}
+.enroll-row:last-of-type{border-bottom:none;}
+.er-course{font-size:14px;font-weight:600;}
+.er-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.er-price{font-size:15px;font-weight:700;color:var(--accent2);}
+.action-row{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.year-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.ybtn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:10px 16px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.ybtn.active{background:var(--accent);border-color:var(--accent);color:#000;}
+.month-grid{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.mbtn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:9px 12px;font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s;min-height:40px;}
+.mbtn.active{border-color:var(--accent);color:var(--accent);background:var(--surface2);}
+.mbtn.future{border-style:dashed;opacity:.55;}
+.mode-row{display:flex;gap:6px;margin-bottom:12px;}
+.mmode{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;}
+.mmode.active{border-color:var(--accent);color:var(--accent);background:var(--surface2);}
+.target-row{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
+.target-row input{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:14px;width:130px;-webkit-appearance:none;}
+.target-row input:focus{outline:none;border-color:var(--accent);}
+.target-lbl{font-size:13px;color:var(--muted);white-space:nowrap;}
+#sales-chart{display:none;margin-bottom:16px;max-height:220px;}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.sum-label{font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;}
+.sum-val{font-size:22px;font-weight:700;color:var(--accent);}
+.stbl{width:100%;border-collapse:collapse;font-size:13px;}
+.stbl th{font-size:11px;color:var(--muted);font-weight:600;text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);}
+.stbl td{padding:10px 6px;border-bottom:1px solid rgba(48,54,61,.4);vertical-align:middle;}
+.stbl tr:last-child td{border-bottom:none;}
+.td-r{text-align:right;font-weight:700;color:var(--accent2);}
+/* Dashboard */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.kpi-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.kpi-val{font-size:26px;font-weight:700;color:var(--accent);line-height:1;}
+.kpi-sub{font-size:11px;margin-top:6px;color:var(--muted);}
+.pos{color:var(--ok)!important;}.neg{color:var(--ng)!important;}
+.dash-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
+.dash-chart-title{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.dash-chart-canvas{max-height:160px;}
+.course-bar-wrap{margin-top:6px;}
+.course-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.course-bar-label{font-size:12px;color:var(--text);width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.course-bar-track{flex:1;background:var(--surface2);border-radius:4px;height:8px;}
+.course-bar-fill{background:var(--accent);border-radius:4px;height:8px;transition:width .4s;}
+.course-bar-val{font-size:11px;color:var(--accent2);width:60px;text-align:right;flex-shrink:0;}
+.uncoll-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px;}
+.uncoll-row:last-child{border-bottom:none;}
+/* Trial students */
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.t-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.t-name{font-size:15px;font-weight:700;}
+.t-meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.t-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.sbadge{display:inline-block;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.sb-plan{background:rgba(232,168,76,.15);color:var(--accent);}
+.sb-done{background:rgba(63,185,80,.15);color:var(--ok);}
+.sb-join{background:rgba(63,185,80,.25);color:var(--ok);}
+.sb-pass{background:rgba(139,148,158,.15);color:var(--muted);}
+.ltv-row{font-size:11px;color:var(--muted);margin-top:5px;display:flex;gap:12px;flex-wrap:wrap;}
+.ltv-val{color:var(--accent2);font-weight:600;}
+/* Modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+.overlay.hide{display:none;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 40px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.mclose{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;}
+.modal-note{font-size:14px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:14px;transition:transform .3s;z-index:200;white-space:nowrap;max-width:90vw;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:var(--ok);color:var(--ok);}
+.toast.err{border-color:var(--ng);color:var(--ng);}
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:14px;}
+.loading{text-align:center;padding:32px;color:var(--muted);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">BRIDGE</div>
+  <div class="sub">Student Management System</div>
+</header>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dash')">概況</button>
+  <button class="tab" onclick="switchTab('reg')">登録</button>
+  <button class="tab" onclick="switchTab('mgr');loadPaymentForCurrentMonth()">生徒</button>
+  <button class="tab" onclick="switchTab('trial')">体験生</button>
+  <button class="tab" onclick="switchTab('sales')">売上</button>
+</div>
+<div class="box">
+
+<!-- ====== 概況 ====== -->
+<div id="pane-dash" class="pane active">
+  <div id="dash-month-nav" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><button onclick="changeDashMonth(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;">◀</button><span id="dash-month-label" style="font-size:14px;font-weight:600;color:var(--accent);min-width:80px;text-align:center;"></span><button onclick="changeDashMonth(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;">▶</button></div>
+  <div id="dash-content"><div class="loading">読込中...</div></div>
+</div>
+
+<!-- ====== 生徒登録 ====== -->
+<div id="pane-reg" class="pane">
+  <div class="stitle">基本情報</div>
+  <div class="field"><label>氏名 *</label><input type="text" id="r-name" placeholder="田中 花子"></div>
+  <div class="row2">
+    <div class="field"><label>学年</label>
+      <select id="r-grade">
+        <option value="">未選択</option>
+        <option>幼児</option><option>小1</option><option>小2</option><option>小3</option>
+        <option>小4</option><option>小5</option><option>小6</option>
+        <option>中1</option><option>中2</option><option>中3</option>
+        <option>高1</option><option>高2</option><option>高3</option>
+      </select>
+    </div>
+    <div class="field"><label>学校名</label><select id="r-school"><option value="">読込中...</option></select></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>LINE ID</label><input type="text" id="r-line" placeholder="@example"></div>
+    <div class="field"><label>電話番号</label><input type="tel" id="r-phone" placeholder="090-0000-0000"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>入会日</label><input type="date" id="r-join"></div>
+    <div class="field"><label>メモ</label><input type="text" id="r-memo"></div>
+  </div>
+  <div class="stitle" style="margin-top:20px;">コース選択</div>
+  <div class="ctabs" id="reg-ctabs"><span style="color:var(--muted);font-size:13px;">読込中...</span></div>
+  <div class="cgrid" id="reg-cgrid"></div>
+  <div class="stags" id="reg-stags"></div>
+  <div class="total-box">
+    <span style="font-size:13px;color:var(--muted);">月額合計</span>
+    <span class="total-val">&#165;<span id="reg-total">0</span></span>
+  </div>
+  <button class="btn btn-primary" id="reg-btn" onclick="submitReg()">登録する</button>
+</div>
+
+<!-- ====== 生徒管理 ====== -->
+<div id="pane-mgr" class="pane">
+  <div style="margin-bottom:14px;">
+    <input type="search" id="mgr-search" placeholder="氏名で検索..." oninput="renderMgr()">
+  </div>
+  <div id="pay-month-nav" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;"><button onclick="changePayMonth(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;">◀</button><span id="pay-month-label" style="font-size:14px;font-weight:600;color:var(--accent);min-width:80px;text-align:center;"></span><button onclick="changePayMonth(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;">▶</button></div>
+  <div id="mgr-list"><div class="loading">読込中...</div></div>
+</div>
+
+<!-- ====== 体験生 ====== -->
+<div id="pane-trial" class="pane">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div class="stitle" style="margin:0;flex:1;">体験生一覧</div>
+    <button class="btn btn-primary btn-sm" onclick="openAddTrialModal()">+ 体験生追加</button>
+  </div>
+  <div class="ctabs" id="trial-filter-tabs">
+    <button class="ctab active" data-status="all" onclick="filterTrials(this)">すべて</button>
+    <button class="ctab" data-status="予定" onclick="filterTrials(this)">体験予定</button>
+    <button class="ctab" data-status="済" onclick="filterTrials(this)">体験済</button>
+    <button class="ctab" data-status="入会" onclick="filterTrials(this)">入会済</button>
+    <button class="ctab" data-status="見送り" onclick="filterTrials(this)">見送り</button>
+  </div>
+  <div id="trial-list"><div class="loading">読込中...</div></div>
+</div>
+
+<!-- ====== 売上照会 ====== -->
+<div id="pane-sales" class="pane">
+  <div class="year-row" id="s-years"></div>
+  <div class="month-grid" id="s-months"></div>
+  <div class="mode-row">
+    <button class="mmode active" data-mode="single" onclick="setSalesMode(this)">単年</button>
+    <button class="mmode" data-mode="yoy" onclick="setSalesMode(this)">前年比較</button>
+    <button class="mmode" data-mode="avg" onclick="setSalesMode(this)">過去平均</button>
+  </div>
+  <canvas id="sales-chart"></canvas>
+  <div class="target-row">
+    <span class="target-lbl" id="target-month-lbl">目標:</span>
+    <input type="text" id="target-input" inputmode="numeric" placeholder="¥ 目標金額">
+    <button class="btn btn-ghost btn-sm" onclick="saveTarget()">保存</button>
+  </div>
+  <div id="s-content"><div class="loading">読込中...</div></div>
+</div>
+
+</div><!-- /box -->
+
+<!-- コース追加モーダル -->
+<div class="overlay hide" id="add-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="add-modal-title">コース追加</span><button class="mclose" onclick="closeModal('add-modal')">&#x2715;</button></div>
+    <div class="ctabs" id="add-ctabs"></div>
+    <div class="cgrid" id="add-cgrid"></div>
+    <div class="stags" id="add-stags" style="margin:10px 0;min-height:30px;"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('add-modal')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1;" id="add-btn">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 月額変更モーダル -->
+<div class="overlay hide" id="price-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="price-modal-title">月額変更</span><button class="mclose" onclick="closeModal('price-modal')">&#x2715;</button></div>
+    <p id="price-modal-label" class="modal-note"></p>
+    <div class="field"><label>新しい金額（空欄でデフォルト戻し）</label><input type="text" id="price-input" inputmode="numeric" placeholder="例：8000"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('price-modal')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1;" id="price-confirm-btn">変更する</button>
+    </div>
+  </div>
+</div>
+
+<!-- コース終了モーダル -->
+<div class="overlay hide" id="end-modal">
+  <div class="modal">
+    <div class="modal-title"><span>コース終了</span><button class="mclose" onclick="closeModal('end-modal')">&#x2715;</button></div>
+    <p id="end-modal-msg" class="modal-note"></p>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('end-modal')">キャンセル</button>
+      <button class="btn btn-danger" style="flex:1;" id="end-confirm-btn">終了する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 退会モーダル -->
+<div class="overlay hide" id="withdraw-modal">
+  <div class="modal">
+    <div class="modal-title"><span>退会処理</span><button class="mclose" onclick="closeModal('withdraw-modal')">&#x2715;</button></div>
+    <p id="withdraw-modal-msg" class="modal-note"></p>
+    <div class="row2">
+      <div class="field"><label>退会日</label><input type="date" id="withdraw-date"></div>
+      <div class="field"><label>退会理由</label>
+        <select id="withdraw-reason">
+          <option value="">選択してください</option>
+          <option>受験終了・卒業</option><option>転校・引越し</option>
+          <option>費用の都合</option><option>他習い事の都合</option><option>その他</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('withdraw-modal')">キャンセル</button>
+      <button class="btn btn-danger" style="flex:1;" id="withdraw-confirm-btn">退会処理する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 体験生追加モーダル -->
+<div class="overlay hide" id="trial-modal">
+  <div class="modal">
+    <div class="modal-title"><span>体験生追加</span><button class="mclose" onclick="closeModal('trial-modal')">&#x2715;</button></div>
+    <div class="field"><label>氏名 *</label><input type="text" id="tr-name" placeholder="山田 太郎"></div>
+    <div class="row2">
+      <div class="field"><label>学年</label>
+        <select id="tr-grade">
+          <option value="">未選択</option>
+          <option>幼児</option><option>小1</option><option>小2</option><option>小3</option>
+          <option>小4</option><option>小5</option><option>小6</option>
+          <option>中1</option><option>中2</option><option>中3</option>
+          <option>高1</option><option>高2</option><option>高3</option>
+        </select>
+      </div>
+      <div class="field"><label>学校名</label><input type="text" id="tr-school" placeholder="〇〇小学校"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>LINE / 電話</label><input type="text" id="tr-contact" placeholder="090-0000-0000"></div>
+      <div class="field"><label>体験予定日</label><input type="date" id="tr-date"></div>
+    </div>
+    <div class="field"><label>興味のあるコース・メモ</label><input type="text" id="tr-memo" placeholder="算数・英語など"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('trial-modal')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1;" id="trial-submit-btn" onclick="submitTrial()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 体験生→入会変換モーダル -->
+<div class="overlay hide" id="convert-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="convert-modal-title">入会処理</span><button class="mclose" onclick="closeModal('convert-modal')">&#x2715;</button></div>
+    <p id="convert-modal-msg" class="modal-note"></p>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('convert-modal')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1;" id="convert-confirm-btn">入会処理する</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+var MONTHS=['2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','1月'];
+var GAS_URL='https://script.google.com/macros/s/AKfycbyrKjG2C7TLtgTIDCwAA-gh4AhGXR0PP7muzg8u-I2NM3UTpDVxMlA8lda1bhwGPlqpfA/exec'
+var PAYMENT_GAS_URL='https://script.google.com/macros/s/AKfycbyrKjG2C7TLtgTIDCwAA-gh4AhGXR0PP7muzg8u-I2NM3UTpDVxMlA8lda1bhwGPlqpfA/exec';
+var ALL_STUDENTS=[],ALL_ENROLL=[],ALL_COURSES=[],ALL_SALES={},ALL_TRIALS=[],ALL_TARGETS={};
+var HISTORICAL_SALES={"2025年1月":{"total":813075,"actual":813075},"2025年2月":{"total":790775,"actual":790775},"2025年3月":{"total":902800,"actual":902800},"2025年4月":{"total":793850,"actual":790150},"2025年5月":{"total":735650,"actual":702675},"2025年6月":{"total":731350,"actual":737550},"2025年7月":{"total":861950,"actual":833750},"2025年8月":{"total":872750,"actual":811500},"2025年9月":{"total":1031200,"actual":1004550},"2025年10月":{"total":1017500,"actual":957950},"2025年11月":{"total":999900,"actual":974800},"2025年12月":{"total":1023700,"actual":1029900},"2026年1月":{"total":1015500,"actual":984500},"2026年2月":{"total":1026200,"actual":937250},"2026年3月":{"total":500850,"actual":446525},"2026年4月":{"total":466950,"actual":436625}};
+
+var regSel=[],addSel=[],addTargetID='',addTargetName='';
+var salesYear='',salesMonth='',salesMode='single',salesLoading=false,salesChartObj=null;
+var dashTrendChart=null,dashCourseChart=null;
+var _priceCtx={},_endCtx={},_withdrawCtx={},_convertCtx={};
+var trialFilter='all';
+var dashYear='',dashMonth='';
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('r-join').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tr-date').value=new Date().toISOString().slice(0,10);
+  _initDashMonth();
+  renderDashboard();
+  loadTargets();
+  loadSchools();
+  loadCourses();
+  loadStudents();
+});
+
+function _initDashMonth(){
+  if(!dashYear){var now=new Date();dashYear=now.getFullYear();dashMonth=now.getMonth()+1;}
+  _updateDashLabel();
+}
+function _updateDashLabel(){
+  var el=document.getElementById('dash-month-label');
+  if(el)el.textContent=dashYear+'年'+dashMonth+'月';
+}
+function changeDashMonth(delta){
+  _initDashMonth();
+  dashMonth+=delta;
+  if(dashMonth>12){dashMonth=1;dashYear++;}
+  if(dashMonth<1){dashMonth=12;dashYear--;}
+  _updateDashLabel();
+  renderDashboard();
+}
+
+function getMonthKey(yr,mo){
+  return yr+'年'+MONTHS[mo-2>=0?mo-2:10];}
+
+async function gas(action,extra){
+  extra=extra||{};
+  var body=JSON.stringify(Object.assign({action:action},extra||{}));
+  for(var attempt=0;attempt<3;attempt++){
+    var r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body});
+    var t=await r.text();
+    try{return JSON.parse(t);}catch(e){
+      if(attempt<2){await new Promise(function(ok){setTimeout(ok,1000*(attempt+1));});continue;}
+      throw new Error('GAS応答エラー: '+t.slice(0,80));
+    }
+  }
+}
+
+function switchTab(id){
+  ['dash','reg','mgr','trial','sales'].forEach(function(t,i){
+    document.querySelectorAll('.tab')[i].classList.toggle('active',t===id);
+    document.getElementById('pane-'+t).classList.toggle('active',t===id);
+  });
+  if(id==='dash') renderDashboard();
+  if(id==='trial') renderTrials();
+  if(id==='sales'&&!salesLoading&&Object.keys(ALL_SALES).length===0) loadSales();
+}
+
+/* ========== SCHOOLS ========== */
+async function loadSchools(){
+  try{
+    var r=await gas('getSchools');
+    var sel=document.getElementById('r-school');
+    if(r.status==='ok'&&r.schools&&r.schools.length){
+      sel.innerHTML='<option value="">未選択</option>';
+      r.schools.forEach(function(s){sel.innerHTML+='<option value="'+esc(s)+'">'+esc(s)+'</option>';});
+    }else{sel.outerHTML='<input type="text" id="r-school" placeholder="学校名を入力">';}
+  }catch(e){var el=document.getElementById('r-school');if(el)el.outerHTML='<input type="text" id="r-school" placeholder="学校名を入力">';}
+}
+
+/* ========== COURSES ========== */
+async function loadCourses(){
+  try{
+    var r=await gas('getCourses');
+    if(r.status!=='ok') throw new Error(r.message);
+    ALL_COURSES=r.courses;
+    buildCtabs('reg-ctabs','reg-cgrid','reg');
+  }catch(e){document.getElementById('reg-cgrid').innerHTML='<div class="empty">コース取得失敗: '+esc(e.message)+'<br><button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="loadCourses()">再試行</button></div>';}
+}
+
+function buildCtabs(tabsId,gridId,mode){
+  var cats=['すべて'];
+  ALL_COURSES.forEach(function(c){if(c.category&&cats.indexOf(c.category)<0)cats.push(c.category);});
+  var h='';
+  cats.forEach(function(c,i){h+='<button class="ctab'+(i===0?' active':'')+'" data-cat="'+esc(c)+'" data-tabs="'+esc(tabsId)+'" data-grid="'+esc(gridId)+'" data-mode="'+esc(mode)+'" onclick="filterCgridBtn(this)">'+esc(c)+'</button>';});
+  document.getElementById(tabsId).innerHTML=h;
+  renderCgrid(gridId,ALL_COURSES,mode);
+}
+
+function filterCgridBtn(btn){
+  var tabsId=btn.dataset.tabs,gridId=btn.dataset.grid,mode=btn.dataset.mode,cat=btn.dataset.cat;
+  document.querySelectorAll('#'+tabsId+' .ctab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  renderCgrid(gridId,cat==='すべて'?ALL_COURSES:ALL_COURSES.filter(function(c){return c.category===cat;}),mode);
+}
+
+function renderCgrid(gridId,list,mode){
+  var sel=mode==='reg'?regSel:addSel;
+  if(!list||!list.length){document.getElementById(gridId).innerHTML='<div class="empty">コースなし</div>';return;}
+  var h='';
+  list.forEach(function(c){
+    var s=sel.some(function(x){return x.courseID===c.courseID;});
+    h+='<div class="citem'+(s?' sel':'')+'" data-id="'+esc(c.courseID)+'" data-mode="'+esc(mode)+'" onclick="toggleCEl(this)">';
+    h+='<div><div class="cname">'+esc(c.courseName||c.displayName||c.courseID)+'</div><div class="cprice">'+(c.price?'¥'+Number(c.price).toLocaleString():'--')+'</div></div>';
+    h+='<div class="ccheck">'+(s?'✓':'')+'</div></div>';
+  });
+  document.getElementById(gridId).innerHTML=h;
+}
+
+function toggleCEl(el){toggleC(el.dataset.id,el.dataset.mode);}
+function toggleCByBtn(btn,mode){toggleC(btn.dataset.cid,mode);}
+
+function toggleC(courseID,mode){
+  var arr=mode==='reg'?regSel:addSel;
+  var course=null;ALL_COURSES.forEach(function(c){if(c.courseID===courseID)course=c;});
+  if(!course)return;
+  var idx=-1;arr.forEach(function(s,i){if(s.courseID===courseID)idx=i;});
+  if(idx>=0)arr.splice(idx,1);else arr.push(course);
+  var gid=mode==='reg'?'reg-cgrid':'add-cgrid';
+  document.querySelectorAll('#'+gid+' .citem').forEach(function(el){
+    if(el.dataset.id===courseID){var s=arr.some(function(x){return x.courseID===courseID;});el.classList.toggle('sel',s);el.querySelector('.ccheck').innerHTML=s?'✓':'';}
+  });
+  if(mode==='reg'){renderRegTags();updateRegTotal();}else renderAddTags();
+}
+
+function renderRegTags(){
+  document.getElementById('reg-stags').innerHTML=regSel.map(function(s){
+    return '<span class="stag">'+esc(s.courseName||s.courseID)+'<button data-cid="'+esc(s.courseID)+'" onclick="toggleCByBtn(this,\'reg\')">×</button></span>';
+  }).join('');
+}
+function updateRegTotal(){document.getElementById('reg-total').textContent=regSel.reduce(function(s,c){return s+(c.price||0);},0).toLocaleString();}
+function renderAddTags(){document.getElementById('add-stags').innerHTML=addSel.map(function(s){return '<span class="stag">'+esc(s.courseName||s.courseID)+'</span>';}).join('');}
+
+/* ========== REGISTRATION ========== */
+async function submitReg(){
+  var name=document.getElementById('r-name').value.trim();
+  if(!name){showToast('氏名を入力してください','err');return;}
+  var btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='登録中...';
+  try{
+    var schoolEl=document.getElementById('r-school');
+    var p={name:name,grade:document.getElementById('r-grade').value,school:schoolEl?schoolEl.value:'',joinDate:document.getElementById('r-join').value,memo:document.getElementById('r-memo').value.trim(),lineId:document.getElementById('r-line').value.trim(),phone:document.getElementById('r-phone').value.trim()};
+    var r=await gas('addStudent',p);
+    if(r.status!=='ok')throw new Error(r.message);
+    for(var i=0;i<regSel.length;i++){
+      var c=regSel[i];
+      await gas('addEnrollment',{studentID:r.studentID,studentName:name,courseID:c.courseID,courseName:c.courseName||c.displayName||c.courseID,standardPrice:c.price||0,startDate:p.joinDate});
+    }
+    showToast(name+' を登録しました','ok');
+    ['r-name','r-memo','r-line','r-phone'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('r-grade').value='';document.getElementById('r-join').value=new Date().toISOString().slice(0,10);
+    if(schoolEl)schoolEl.value='';
+    regSel=[];renderRegTags();updateRegTotal();
+    document.querySelectorAll('#reg-cgrid .citem').forEach(function(el){el.classList.remove('sel');el.querySelector('.ccheck').innerHTML='';});
+    await loadStudents();
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='登録する';}
+}
+
+/* ========== STUDENTS ========== */
+async function loadStudents(){
+  try{
+    var res=await Promise.all([gas('getStudents'),gas('getEnrollments'),gas('getTrials'),gas('getCourses')]);
+    if(res[0].status==='ok')ALL_STUDENTS=res[0].students;
+    if(res[1].status==='ok')ALL_ENROLL=res[1].enrollments;
+    if(res[2]&&res[2].status==='ok')ALL_TRIALS=res[2].trials||[];
+    if(res[3]&&res[3].status==='ok'){
+      ALL_COURSES=res[3].courses;
+      var priceMap={};
+      ALL_COURSES.forEach(function(c){priceMap[c.courseID]=c.price||0;});
+      ALL_ENROLL.forEach(function(e){
+        if(priceMap[e.courseID]!==undefined){
+          var oldStd=parseFloat(e.standardPrice)||0;
+          var newStd=priceMap[e.courseID];
+          if(e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!==''){
+            if(parseFloat(e.overridePrice)===oldStd){e.overridePrice='';}
+          }
+          e.standardPrice=newStd;
+        }
+      });
+    }
+    renderMgr();
+    renderDashboard();
+  }catch(e){document.getElementById('mgr-list').innerHTML='<div class="empty">読み込みエラー: '+esc(e.message)+'<br><button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="loadStudents()">再試行</button></div>';}
+}
+
+function calcMonths(dateStr){
+  if(!dateStr)return 0;
+  var d=new Date(dateStr),now=new Date();
+  return Math.max(0,(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth()));
+}
+
+function renderMgr(){
+  var q=(document.getElementById('mgr-search').value||'').toLowerCase();
+  var list=ALL_STUDENTS.filter(function(s){return s.isActive;});
+  if(q)list=list.filter(function(s){return s.name.toLowerCase().indexOf(q)>=0;});
+  list.sort(function(a,b){return (a.yomi||a.name).localeCompare((b.yomi||b.name),'ja');});
+  var el=document.getElementById('mgr-list');
+  if(!list.length){el.innerHTML='<div class="empty">在籍中の生徒がいません</div>';return;}
+  var h='';
+  list.forEach(function(s){
+    var enrolls=ALL_ENROLL.filter(function(e){return e.studentID===s.studentID&&e.isActive;});
+    var monthly=enrolls.reduce(function(sum,e){return sum+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
+    var months=calcMonths(s.joinDate);
+    var ltv=monthly*months;
+    var cr='';
+    if(enrolls.length){
+      enrolls.forEach(function(e){
+        var price=(e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0;
+        var ov=e.overridePrice!=null?'<span style="font-size:10px;color:var(--accent);margin-left:5px;">上書</span>':'';
+        cr+='<div class="enroll-row"><div style="flex:1;min-width:0;"><div class="er-course">'+esc(e.courseName||e.courseID)+'</div>';
+        cr+='<div class="er-meta">開始: '+esc(e.startDate||'--')+ov+'</div></div>';
+        cr+='<div style="display:flex;align-items:center;gap:6px;"><span class="er-price">¥'+price.toLocaleString()+'</span>';
+        cr+='<button class="btn btn-ghost btn-sm" data-eid="'+esc(e.enrollID)+'" data-cn="'+esc(e.courseName||'')+'" data-p="'+Number(price)+'" data-sid="'+esc(s.studentID)+'" onclick="editPriceBtn(this)">変更</button>';
+        cr+='<button class="btn btn-danger btn-sm" data-eid="'+esc(e.enrollID)+'" data-sid="'+esc(s.studentID)+'" data-cn="'+esc(e.courseName||'')+'" onclick="endEnrollBtn(this)">終了</button>';
+        cr+='</div></div>';
+      });
+    }else{cr='<div style="font-size:13px;color:var(--muted);padding:6px 0;">コース未登録</div>';}
+    var clist=enrolls.map(function(e){return '<span style="margin-right:6px;font-size:12px;color:var(--muted);">'+esc(e.courseName||e.courseID)+'</span>';}).join('');
+    var lineInfo=s.lineId?'<span style="font-size:11px;color:var(--muted);">LINE: '+esc(s.lineId)+'</span>':'';
+    var phoneInfo=s.phone?'<span style="font-size:11px;color:var(--muted);">📞 '+esc(s.phone)+'</span>':'';
+    h+='<div class="scard"><div class="scard-head" data-card="sd-'+esc(s.studentID)+'" onclick="toggleCardEl(this)">';
+    h+='<div style="flex:1;min-width:0;"><div class="sname">'+esc(s.name)+'</div>';
+    h+='<div class="sinfo">'+esc(s.grade||'--')+(s.school?' / '+esc(s.school):'')+'</div>';
+    h+='<div class="ltv-row"><span>在籍 <span class="ltv-val">'+months+'ヶ月</span></span><span>累計 <span class="ltv-val">¥'+ltv.toLocaleString()+'</span></span>'+(lineInfo?'<span>'+lineInfo+'</span>':'')+(phoneInfo?'<span>'+phoneInfo+'</span>':'')+'</div>';
+    h+='<div style="margin-top:4px;">'+(clist||'<span style="font-size:12px;color:var(--muted);">コースなし</span>')+'</div></div>';
+    h+='<div style="text-align:right;flex-shrink:0;"><span class="badge badge-ok">在籍</span><br>';
+    h+='<span class="stotal" style="margin-top:6px;display:block;">¥'+monthly.toLocaleString()+'/月</span></div>'+'<label onclick="event.stopPropagation()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 10px;cursor:pointer;border-left:1px solid var(--border);min-width:52px;">'+'<input type="checkbox" '+(window._payData&&window._payData[s.studentID]?'checked':'')+' data-sid="'+esc(s.studentID)+'" onchange="togglePayment(this.dataset.sid,this.checked)" style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;">'+'<span style="font-size:10px;margin-top:2px;color:var(--muted);">入金</span></label></div>';
+    h+='<div class="scard-detail" id="sd-'+esc(s.studentID)+'">'+cr;
+    h+='<div class="action-row">';
+    h+='<button class="btn btn-ghost" style="flex:1;" data-sid="'+esc(s.studentID)+'" data-name="'+esc(s.name)+'" onclick="openAddModalBtn(this)">+ コース追加</button>';
+    h+='<button class="btn btn-danger" style="flex:1;" data-sid="'+esc(s.studentID)+'" data-name="'+esc(s.name)+'" onclick="doWithdrawBtn(this)">退会処理</button>';
+    h+='</div></div></div>';
+  });
+  el.innerHTML=h;
+}
+
+function toggleCardEl(el){var card=document.getElementById(el.dataset.card);if(card)card.classList.toggle('open');}
+
+/* ========== DASHBOARD ========== */
+function renderDashboard(){
+  if(document.getElementById('pane-dash').style.display==='none') return;
+  _initDashMonth();
+  var yr=dashYear,mo=dashMonth;
+  var active=ALL_STUDENTS.filter(function(s){return s.isActive;});
+  var monthStart=new Date(yr,mo-1,1),monthEnd=new Date(yr,mo,0);
+  var activeEnrolls=ALL_ENROLL.filter(function(e){
+    if(!e.isActive)return false;
+    var jd=new Date(e.joinDate),ld=e.leaveDate?new Date(e.leaveDate):null;
+    return jd<=monthEnd&&(!ld||ld>=monthStart);
+  });
+  var monthlyTotal=activeEnrolls.reduce(function(s,e){return s+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
+  var now=new Date();
+  var joins=ALL_STUDENTS.filter(function(s){if(!s.joinDate)return false;var d=new Date(s.joinDate);return d.getFullYear()===yr&&d.getMonth()===mo-1;}).length;
+  var leaves=ALL_STUDENTS.filter(function(s){if(!s.leaveDate)return false;var d=new Date(s.leaveDate);return d.getFullYear()===yr&&d.getMonth()===mo-1;}).length;
+  var totalMonths=active.map(function(s){return calcMonths(s.joinDate);});
+  var avgMonths=totalMonths.length?Math.round(totalMonths.reduce(function(a,b){return a+b;},0)/totalMonths.length):0;
+  var netDelta=joins-leaves;
+  var netStr=(netDelta>0?'+':'')+netDelta;
+  var netClass=netDelta>0?'pos':netDelta<0?'neg':'';
+  var h='';
+  h+='<div class="kpi-grid">';
+  h+='<div class="kpi-card"><div class="kpi-label">在籍生徒数</div><div class="kpi-val">'+active.length+'<span style="font-size:14px;color:var(--muted);">名</span></div><div class="kpi-sub">平均在籍 <span class="ltv-val">'+avgMonths+'ヶ月</span></div></div>';
+  h+='<div class="kpi-card"><div class="kpi-label">見込月額</div><div class="kpi-val" style="font-size:20px;">¥'+monthlyTotal.toLocaleString()+'</div><div class="kpi-sub" style="color:var(--muted);">在籍ベース</div></div>';
+  h+='<div class="kpi-card"><div class="kpi-label">入会 / 退会</div><div class="kpi-val '+netClass+'">'+netStr+'</div><div class="kpi-sub">+'+joins+' / -'+leaves+'</div></div>'
+  h+='</div>';
+  h+='<div class="dash-chart-wrap"><div class="dash-chart-title">入退会推移（直近6ヶ月）</div><canvas id="dash-trend-canvas" class="dash-chart-canvas"></canvas></div>';
+  h+='<div class="dash-chart-wrap"><div class="dash-chart-title">コース別月額構成</div><div class="course-bar-wrap" id="course-dist"></div></div>';
+  document.getElementById('dash-content').innerHTML=h;
+  buildDashTrendChart();
+  buildCourseDistChart();
+}
+
+function buildDashTrendChart(){
+  var canvas=document.getElementById('dash-trend-canvas');
+  if(!canvas||typeof Chart==='undefined')return;
+  _initDashMonth();
+  var yr=dashYear,mo=dashMonth;
+  var labels=[],joins=[],leaves=[];
+  for(var i=5;i>=0;i--){
+    var m=mo-i;var y=yr;
+    while(m<=0){m+=12;y--;}
+    var jc=ALL_STUDENTS.filter(function(s){if(!s.joinDate)return false;var jd=new Date(s.joinDate);return jd.getFullYear()===y&&jd.getMonth()===m-1;}).length;
+    var lc=ALL_STUDENTS.filter(function(s){if(!s.leaveDate)return false;var ld=new Date(s.leaveDate);return ld.getFullYear()===y&&ld.getMonth()===m-1;}).length;
+    labels.push(m+'月');joins.push(jc);leaves.push(lc);
+  }
+  if(dashTrendChart){dashTrendChart.destroy();dashTrendChart=null;}
+  dashTrendChart=new Chart(canvas,{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'入会',data:joins,backgroundColor:'rgba(63,185,80,0.7)',borderColor:'rgba(63,185,80,1)',borderWidth:1,borderRadius:3},
+      {label:'退会',data:leaves,backgroundColor:'rgba(248,81,73,0.6)',borderColor:'rgba(248,81,73,1)',borderWidth:1,borderRadius:3}
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#8b949e',font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw+'名';}}}},scales:{y:{ticks:{color:'#8b949e',stepSize:1},grid:{color:'rgba(48,54,61,0.6)'},border:{display:false}},x:{ticks:{color:'#8b949e'},grid:{display:false}}}}
+  });
+}
+
+function buildCourseDistChart() {
+  const el = document.getElementById('course-dist');
+  if (!el) return;
+  _initDashMonth();
+  const yr = dashYear, mo = dashMonth;
+  const monthStart = new Date(yr, mo-1, 1);
+  const monthEnd = new Date(yr, mo, 0);
+
+  const CATS     = ['そろばん', '算数', '国語', '塾'];
+  const PATTERNS = [/そろばん/, /算数/, /国語/, /ブリッジ/];
+  const COLORS   = ['#e8a84c', '#3fb950', '#58a6ff', '#f85149'];
+
+  const totals = [0, 0, 0, 0];
+  ALL_ENROLL.filter(e => {
+    if (!e.isActive) return false;
+    const jd = new Date(e.joinDate);
+    const ld = e.leaveDate ? new Date(e.leaveDate) : null;
+    return jd <= monthEnd && (!ld || ld >= monthStart);
+  }).forEach(e => {
+    const price = (e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0;
+    if (!price) return;
+    for (let i = 0; i < PATTERNS.length; i++) {
+      if (PATTERNS[i].test(e.courseName || '')) { totals[i] += price; break; }
+    }
+  });
+
+  const grand = totals.reduce((s, v) => s + v, 0);
+  const maxV  = Math.max(...totals, 1);
+
+  el.innerHTML = `
+    <p style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;">コース別月額構成</p>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+      <div style="position:relative;flex-shrink:0;">
+        <canvas id="cat-donut" width="150" height="150"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+          <div style="font-size:.65rem;color:var(--muted);">合計</div>
+          <div style="font-size:.9rem;font-weight:700;color:var(--text);">¥${grand.toLocaleString()}</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:160px;">
+        ${CATS.map((cat, i) => {
+          const pct = grand > 0 ? Math.round(totals[i] / grand * 100) : 0;
+          const bar = Math.round(totals[i] / maxV * 100);
+          return `<div style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+              <span style="font-weight:600;color:${COLORS[i]};font-size:.9rem;">${cat}</span>
+              <span style="font-size:.85rem;">¥${totals[i].toLocaleString()}
+                <span style="color:${COLORS[i]};font-size:.8rem;margin-left:4px;">(${pct}%)</span>
+              </span>
+            </div>
+            <div style="background:rgba(255,255,255,0.07);border-radius:6px;height:9px;overflow:hidden;">
+              <div style="background:${COLORS[i]};border-radius:6px;height:9px;width:${bar}%;transition:width .5s;"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  const ctx = document.getElementById('cat-donut');
+  if (ctx && window.Chart) {
+    if (window._catDonutChart) { window._catDonutChart.destroy(); }
+    const pctLabelPlugin = {
+      id: 'pctLabel',
+      afterDatasetDraw(chart) {
+        const { ctx: c, data } = chart;
+        const dataset = data.datasets[0];
+        const meta = chart.getDatasetMeta(0);
+        const total = dataset.data.reduce((s, v) => s + v, 0);
+        if (!total) return;
+        c.save();
+        meta.data.forEach((arc, i) => {
+          const val = dataset.data[i];
+          const pct = Math.round(val / total * 100);
+          if (pct < 5) return;
+          const angle = (arc.startAngle + arc.endAngle) / 2;
+          const r = (arc.innerRadius + arc.outerRadius) / 2;
+          const x = arc.x + Math.cos(angle) * r;
+          const y = arc.y + Math.sin(angle) * r;
+          c.fillStyle = '#fff';
+          c.font = 'bold 10px "Noto Sans JP", sans-serif';
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.shadowColor = 'rgba(0,0,0,0.5)';
+          c.shadowBlur = 3;
+          c.fillText(pct + '%', x, y);
+          c.shadowBlur = 0;
+        });
+        c.restore();
+      }
+    };
+    window._catDonutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: CATS,
+        datasets: [{
+          data: totals,
+          backgroundColor: COLORS,
+          borderColor: '#0d1117',
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: false,
+        animation: { duration: 600 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const v = ctx.parsed;
+                const p = grand > 0 ? Math.round(v / grand * 100) : 0;
+                return ' ¥' + v.toLocaleString() + ' (' + p + '%)';
+              }
+            }
+          }
+        },
+        cutout: '60%'
+      },
+      plugins: [pctLabelPlugin]
+    });
+  }
+}
+function filterTrials(btn){
+  trialFilter=btn.dataset.status;
+  document.querySelectorAll('#trial-filter-tabs .ctab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  renderTrials();
+}
+
+function renderTrials(){
+  var list=trialFilter==='all'?ALL_TRIALS:ALL_TRIALS.filter(function(t){return t.status===trialFilter;});
+  list=list.slice().sort(function(a,b){return (b.trialDate||'').localeCompare(a.trialDate||'');});
+  var el=document.getElementById('trial-list');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty">該当する体験生がいません</div>';return;}
+  var statusBadge={
+    '予定':'<span class="sbadge sb-plan">体験予定</span>',
+    '済':'<span class="sbadge sb-done">体験済</span>',
+    '入会':'<span class="sbadge sb-join">入会済</span>',
+    '見送り':'<span class="sbadge sb-pass">見送り</span>'
+  };
+  var h='';
+  list.forEach(function(t){
+    var badge=statusBadge[t.status]||'<span class="sbadge sb-pass">'+esc(t.status||'未設定')+'</span>';
+    h+='<div class="tcard">';
+    h+='<div class="t-head"><div><div class="t-name">'+esc(t.name)+'　'+badge+'</div>';
+    h+='<div class="t-meta">'+esc(t.grade||'--')+(t.school?' / '+esc(t.school):'')+(t.trialDate?'　体験日: '+esc(t.trialDate):'')+'<br>'+(t.contact?'連絡先: '+esc(t.contact):'')+(t.memo?'　'+esc(t.memo):'')+'</div></div></div>';
+    h+='<div class="t-actions">';
+    if(t.status!=='入会'&&t.status!=='見送り'){
+      h+='<button class="btn btn-ghost btn-sm" data-tid="'+esc(t.trialID)+'" data-status="済" onclick="updateTrialStatus(this)">体験完了</button>';
+    }
+    if(t.status==='済'||t.status==='予定'){
+      h+='<button class="btn btn-primary btn-sm" data-tid="'+esc(t.trialID)+'" data-name="'+esc(t.name)+'" onclick="convertTrialBtn(this)">入会へ</button>';
+    }
+    if(t.status!=='入会'){
+      h+='<button class="btn btn-ghost btn-sm" data-tid="'+esc(t.trialID)+'" data-status="見送り" onclick="updateTrialStatus(this)">見送り</button>';
+    }
+    h+='</div></div>';
+  });
+  el.innerHTML=h;
+}
+
+function openAddTrialModal(){
+  document.getElementById('tr-name').value='';document.getElementById('tr-grade').value='';
+  document.getElementById('tr-school').value='';document.getElementById('tr-contact').value='';
+  document.getElementById('tr-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tr-memo').value='';
+  document.getElementById('trial-modal').classList.remove('hide');
+}
+
+async function submitTrial(){
+  var name=document.getElementById('tr-name').value.trim();
+  if(!name){showToast('氏名を入力してください','err');return;}
+  var btn=document.getElementById('trial-submit-btn');btn.disabled=true;btn.textContent='追加中...';
+  try{
+    var p={name:name,grade:document.getElementById('tr-grade').value,school:document.getElementById('tr-school').value.trim(),contact:document.getElementById('tr-contact').value.trim(),trialDate:document.getElementById('tr-date').value,memo:document.getElementById('tr-memo').value.trim(),status:'予定'};
+    var r=await gas('addTrial',p);
+    if(r.status==='ok'){ALL_TRIALS.unshift(Object.assign({trialID:r.trialID},p));}
+    showToast(name+' を追加しました','ok');closeModal('trial-modal');renderTrials();
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='追加する';}
+}
+
+async function updateTrialStatus(btn){
+  var tid=btn.dataset.tid,status=btn.dataset.status;
+  try{
+    await gas('updateTrialStatus',{trialID:tid,status:status});
+    ALL_TRIALS.forEach(function(t){if(t.trialID===tid)t.status=status;});
+    renderTrials();showToast('ステータスを更新しました','ok');
+  }catch(e){showToast('エラー: '+e.message,'err');}
+}
+
+function convertTrialBtn(btn){
+  _convertCtx={tid:btn.dataset.tid,name:btn.dataset.name};
+  document.getElementById('convert-modal-title').textContent=btn.dataset.name+' の入会処理';
+  document.getElementById('convert-modal-msg').textContent=btn.dataset.name+' を正式入会に変換します。生徒一覧に追加され、体験生のステータスが「入会」になります。';
+  document.getElementById('convert-confirm-btn').onclick=confirmConvert;
+  document.getElementById('convert-modal').classList.remove('hide');
+}
+
+async function confirmConvert(){
+  var btn=document.getElementById('convert-confirm-btn');btn.disabled=true;btn.textContent='処理中...';
+  try{
+    var trial=null;ALL_TRIALS.forEach(function(t){if(t.trialID===_convertCtx.tid)trial=t;});
+    var p={name:_convertCtx.name,grade:trial?trial.grade:'',school:trial?trial.school:'',phone:trial?trial.contact:'',lineId:'',joinDate:new Date().toISOString().slice(0,10),memo:trial?trial.memo:''};
+    var r=await gas('addStudent',p);
+    if(r.status!=='ok')throw new Error(r.message);
+    await gas('updateTrialStatus',{trialID:_convertCtx.tid,status:'入会'});
+    ALL_TRIALS.forEach(function(t){if(t.trialID===_convertCtx.tid)t.status='入会';});
+    showToast(_convertCtx.name+' を生徒に登録しました','ok');
+    closeModal('convert-modal');renderTrials();
+    await loadStudents();
+    switchTab('mgr');
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='入会処理する';}
+}
+
+/* ========== STUDENT MODALS ========== */
+function editPriceBtn(btn){
+  _priceCtx={eid:btn.dataset.eid,cn:btn.dataset.cn,sid:btn.dataset.sid};
+  document.getElementById('price-modal-title').textContent='「'+btn.dataset.cn+'」月額変更';
+  document.getElementById('price-modal-label').textContent='現在: ¥'+Number(btn.dataset.p).toLocaleString();
+  document.getElementById('price-input').value=btn.dataset.p;
+  document.getElementById('price-modal').classList.remove('hide');
+  document.getElementById('price-confirm-btn').onclick=confirmPriceEdit;
+}
+async function confirmPriceEdit(){
+  var v=document.getElementById('price-input').value.trim();
+  var np=v===''?'':parseInt(v.replace(/\D/g,''));
+  var btn=document.getElementById('price-confirm-btn');btn.disabled=true;btn.textContent='更新中...';
+  try{
+    var r=await gas('updateEnrollment',{enrollID:_priceCtx.eid,overridePrice:np});
+    if(r.status!=='ok')throw new Error(r.message);
+    showToast('月額を更新しました','ok');closeModal('price-modal');
+    await loadStudents();var el=document.getElementById('sd-'+_priceCtx.sid);if(el)el.classList.add('open');
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='変更する';}
+}
+
+function endEnrollBtn(btn){
+  _endCtx={eid:btn.dataset.eid,sid:btn.dataset.sid,cn:btn.dataset.cn};
+  document.getElementById('end-modal-msg').textContent='「'+btn.dataset.cn+'」を終了しますか？';
+  document.getElementById('end-modal').classList.remove('hide');
+  document.getElementById('end-confirm-btn').onclick=confirmEndEnroll;
+}
+async function confirmEndEnroll(){
+  var btn=document.getElementById('end-confirm-btn');btn.disabled=true;btn.textContent='処理中...';
+  try{
+    var r=await gas('endEnrollment',{enrollID:_endCtx.eid});
+    if(r.status!=='ok')throw new Error(r.message);
+    showToast('コースを終了しました','ok');closeModal('end-modal');
+    await loadStudents();var el=document.getElementById('sd-'+_endCtx.sid);if(el)el.classList.add('open');
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='終了する';}
+}
+
+function doWithdrawBtn(btn){
+  _withdrawCtx={sid:btn.dataset.sid,name:btn.dataset.name};
+  document.getElementById('withdraw-modal-msg').textContent=btn.dataset.name+' を退会処理しますか？スプレッドシートのデータは残ります。';
+  document.getElementById('withdraw-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('withdraw-reason').value='';
+  document.getElementById('withdraw-modal').classList.remove('hide');
+  document.getElementById('withdraw-confirm-btn').onclick=confirmWithdraw;
+}
+async function confirmWithdraw(){
+  var btn=document.getElementById('withdraw-confirm-btn');btn.disabled=true;btn.textContent='処理中...';
+  try{
+    var ld=document.getElementById('withdraw-date').value;
+    var reason=document.getElementById('withdraw-reason').value;
+    var r=await gas('withdraw',{studentID:_withdrawCtx.sid,leaveDate:ld||'',reason:reason});
+    if(r.status!=='ok')throw new Error(r.message);
+    showToast(_withdrawCtx.name+' を退会処理しました','ok');closeModal('withdraw-modal');loadStudents();
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='退会処理する';}
+}
+
+function openAddModalBtn(btn){
+  addTargetID=btn.dataset.sid;addTargetName=btn.dataset.name;addSel=[];
+  document.getElementById('add-modal-title').textContent=addTargetName+' にコース追加';
+  document.getElementById('add-stags').innerHTML='';
+  buildCtabs('add-ctabs','add-cgrid','add');
+  document.getElementById('add-btn').onclick=confirmAdd;
+  document.getElementById('add-modal').classList.remove('hide');
+}
+async function confirmAdd(){
+  if(!addSel.length){showToast('コースを選んでください','err');return;}
+  var btn=document.getElementById('add-btn');btn.disabled=true;btn.textContent='追加中...';
+  try{
+    var today=new Date().toISOString().slice(0,10);
+    for(var i=0;i<addSel.length;i++){
+      var c=addSel[i];
+      await gas('addEnrollment',{studentID:addTargetID,studentName:addTargetName,courseID:c.courseID,courseName:c.courseName||c.displayName||c.courseID,standardPrice:c.price||0,startDate:today});
+    }
+    showToast('コースを追加しました','ok');closeModal('add-modal');
+    await loadStudents();var el=document.getElementById('sd-'+addTargetID);if(el)el.classList.add('open');
+  }catch(e){showToast('エラー: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='追加する';}
+}
+
+function closeModal(id){document.getElementById(id).classList.add('hide');}
+
+/* ========== SALES ========== */
+function loadTargets(){
+  try{var s=localStorage.getItem('bridge_targets');ALL_TARGETS=s?JSON.parse(s):{};} catch(e){ALL_TARGETS={};}
+}
+function saveTarget(){
+  var v=document.getElementById('target-input').value.trim();
+  var amount=parseInt(v.replace(/\D/g,''));
+  if(!salesMonth||isNaN(amount)){showToast('月と金額を確認してください','err');return;}
+  ALL_TARGETS[salesMonth]=amount;
+  try{localStorage.setItem('bridge_targets',JSON.stringify(ALL_TARGETS));}catch(e){}
+  showToast(salesMonth+' の目標を保存しました','ok');
+  renderChart();renderSalesDetail();
+}
+
+async function loadSales(){
+  if(salesLoading)return;salesLoading=true;
+  document.getElementById('s-content').innerHTML='<div class="loading">読込中...</div>';
+  try{
+    var r=await gas('getSales');
+    if(r.status!=='ok')throw new Error(r.message);
+    ALL_SALES=Object.assign({},HISTORICAL_SALES,r.sales||{});buildSalesUI();
+  }catch(e){ALL_SALES=Object.assign({},HISTORICAL_SALES);buildSalesUI();}
+  finally{salesLoading=false;}
+}
+
+function buildSalesUI(){
+  var now=new Date();
+  var yr=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  var dataYears=[];
+  Object.keys(ALL_SALES).forEach(function(k){var m=k.match(/^(\d{4})年/);if(m&&dataYears.indexOf(parseInt(m[1]))<0)dataYears.push(parseInt(m[1]));});
+  var allYears=dataYears.slice();
+  [yr-1,yr,yr+1].forEach(function(y){if(allYears.indexOf(y)<0)allYears.push(y);});
+  allYears.sort();
+  if(!salesYear)salesYear=String(yr);
+  document.getElementById('s-years').innerHTML=allYears.map(function(y){return '<button class="ybtn'+(y==salesYear?' active':'')+'" onclick="selYear(\''+y+'\')">'+y+'年度</button>';}).join('');
+  renderSalesMonths();
+}
+
+function selYear(y){
+  salesYear=y;salesMonth='';
+  document.querySelectorAll('.ybtn').forEach(function(b){b.classList.toggle('active',b.textContent===y+'年度');});
+  renderSalesMonths();
+}
+
+function setSalesMode(btn){
+  salesMode=btn.dataset.mode;
+  document.querySelectorAll('.mmode').forEach(function(b){b.classList.toggle('active',b.dataset.mode===salesMode);});
+  renderChart();
+}
+
+function renderSalesMonths(){
+  var yr=parseInt(salesYear),now=new Date();
+  var keys=MONTHS.slice(0,11).map(function(m){return yr+'年'+m;});
+  keys.push((yr+1)+'年1月');
+  if(!salesMonth){var l=null;for(var i=keys.length-1;i>=0;i--){if(ALL_SALES[keys[i]]){l=keys[i];break;}}salesMonth=l||keys[keys.length-1];}
+  document.getElementById('s-months').innerHTML=keys.map(function(key){
+    var p=key.match(/^(\d{4})年(\d+)月/);
+    var isFuture=p&&new Date(parseInt(p[1]),parseInt(p[2])-1,2)>now;
+    var label=key.replace(/^\d{4}年/,'');
+    return '<button class="mbtn'+(key===salesMonth?' active':'')+(isFuture&&!ALL_SALES[key]?' future':'')+'" onclick="selMonth(\''+key+'\')">'+label+(isFuture&&!ALL_SALES[key]?'*':'')+'</button>';
+  }).join('');
+  var tgt=ALL_TARGETS[salesMonth];
+  document.getElementById('target-input').value=tgt?tgt.toLocaleString():'';
+  document.getElementById('target-month-lbl').textContent=(salesMonth?salesMonth.replace(/^\d{4}年/,''):'--')+' 目標:';
+  renderChart();renderSalesDetail();
+}
+
+function selMonth(key){
+  salesMonth=key;
+  var label=key.replace(/^\d{4}年/,'');
+  document.querySelectorAll('.mbtn').forEach(function(b){b.classList.toggle('active',b.textContent===label||b.textContent===label+'*');});
+  var tgt=ALL_TARGETS[salesMonth];
+  document.getElementById('target-input').value=tgt?tgt.toLocaleString():'';
+  document.getElementById('target-month-lbl').textContent=label+' 目標:';
+  renderSalesDetail();
+}
+
+function renderChart(){
+  var canvas=document.getElementById('sales-chart');
+  if(!canvas||typeof Chart==='undefined')return;
+  var yr=parseInt(salesYear),now=new Date();
+  var keys=MONTHS.slice(0,11).map(function(m){return yr+'年'+m;});
+  keys.push((yr+1)+'年1月');
+  var labels=keys.map(function(k){return k.replace(/^\d{4}年/,'');});
+  var active=ALL_ENROLL.filter(function(e){return e.isActive;});
+  var enrollTotal=active.reduce(function(s,e){return s+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
+
+  var billingData=keys.map(function(k){return (ALL_SALES[k]&&ALL_SALES[k].total>0)?ALL_SALES[k].total:0;});
+  var actualData=keys.map(function(k){return (ALL_SALES[k]&&ALL_SALES[k].actual>0)?ALL_SALES[k].actual:0;});
+  keys.forEach(function(k,i){var p=k.match(/^(\d{4})年(\d+)月/);var isFuture=p&&new Date(parseInt(p[1]),parseInt(p[2])-1,2)>now;if(isFuture&&billingData[i]===0)billingData[i]=enrollTotal;});
+
+  var billingColors=keys.map(function(k){var p=k.match(/^(\d{4})年(\d+)月/);return (p&&new Date(parseInt(p[1]),parseInt(p[2])-1,2)>now)?'rgba(232,168,76,0.25)':'rgba(232,168,76,0.8)';});
+  var datasets=[
+    {label:'請求合計',data:billingData,backgroundColor:billingColors,borderColor:'rgba(232,168,76,1)',borderWidth:1,borderRadius:4,order:3},
+    {label:'実績合計',data:actualData,backgroundColor:'rgba(63,185,80,0.7)',borderColor:'rgba(63,185,80,1)',borderWidth:1,borderRadius:4,order:2}
+  ];
+
+  var targetData=keys.map(function(k){return ALL_TARGETS[k]||null;});
+  if(targetData.some(function(v){return v!==null;})){
+    datasets.push({label:'目標',data:targetData,type:'line',borderColor:'rgba(240,201,122,0.8)',borderDash:[4,4],borderWidth:2,pointRadius:3,pointBackgroundColor:'rgba(240,201,122,0.8)',fill:false,order:0,tension:0});
+  }
+
+  if(salesMode==='yoy'){
+    var prevYr=yr-1;
+    var prevKeys=MONTHS.slice(0,11).map(function(m){return prevYr+'年'+m;});
+    prevKeys.push((prevYr+1)+'年1月');
+    var prevData=prevKeys.map(function(k){return (ALL_SALES[k]&&ALL_SALES[k].total>0)?ALL_SALES[k].total:null;});
+    datasets.push({label:'前年同月',data:prevData,backgroundColor:'rgba(139,148,158,0.4)',borderColor:'rgba(139,148,158,0.8)',borderWidth:1,borderRadius:4,order:4});
+  }
+
+  if(salesMode==='avg'){
+    var avgData=computeAvgData(yr,keys);
+    if(avgData){
+      datasets.push({label:'過去平均',data:avgData,type:'line',borderColor:'rgba(100,160,255,0.8)',borderDash:[6,3],borderWidth:2,pointRadius:2,fill:false,order:1,tension:0.3});
+    }
+  }
+
+  canvas.style.display='block';
+  if(salesChartObj){salesChartObj.destroy();salesChartObj=null;}
+  salesChartObj=new Chart(canvas,{
+    type:'bar',data:{labels:labels,datasets:datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{color:'#8b949e',font:{size:11}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': ¥'+Number(ctx.raw||0).toLocaleString();}}}},
+      scales:{y:{ticks:{color:'#8b949e',callback:function(v){return v>=10000?(v/10000).toFixed(0)+'万':'¥'+v;}},grid:{color:'rgba(48,54,61,0.6)'},border:{display:false}},x:{ticks:{color:'#8b949e'},grid:{display:false}}}}
+  });
+}
+
+function computeAvgData(currentYr,currentKeys){
+  var fiscalYears=[];
+  Object.keys(ALL_SALES).forEach(function(k){
+    var m=k.match(/^(\d{4})年(\d+)月/);
+    if(m){var yr2=parseInt(m[1]),mo=parseInt(m[2]);var fy=mo===1?yr2-1:yr2;if(fy!==currentYr&&fiscalYears.indexOf(fy)<0)fiscalYears.push(fy);}
+  });
+  if(!fiscalYears.length)return null;
+  return currentKeys.map(function(key,pos){
+    var vals=[];
+    fiscalYears.forEach(function(fy){
+      var prevKeys=MONTHS.slice(0,11).map(function(m){return fy+'年'+m;});
+      prevKeys.push((fy+1)+'年1月');
+      var pk=prevKeys[pos];
+      if(ALL_SALES[pk]&&ALL_SALES[pk].total>0)vals.push(ALL_SALES[pk].total);
+    });
+    return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+  });
+}
+
+function renderSalesDetail(){
+  var c=document.getElementById('s-content');
+  if(!salesMonth){c.innerHTML='<div class="empty">月を選んでください</div>';return;}
+  var p=salesMonth.match(/^(\d{4})年(\d+)月/);
+  var isFuture=p&&new Date(parseInt(p[1]),parseInt(p[2])-1,2)>new Date();
+  var salesData=ALL_SALES[salesMonth]||null;
+  var active=ALL_ENROLL.filter(function(e){return e.isActive;});
+  var enrollTotal=active.reduce(function(s,e){return s+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
+  var uids=[];active.forEach(function(e){if(uids.indexOf(e.studentID)<0)uids.push(e.studentID);});
+  var target=ALL_TARGETS[salesMonth]||null;
+  var h='';
+  if(salesData&&salesData.total>0){
+    var pctActual=salesData.total>0?Math.round((salesData.actual||0)/salesData.total*100):0;
+    var pctTarget=target?Math.round(salesData.total/target*100):null;
+    h+='<div class="sum-grid">';
+    h+='<div class="sum-card"><div class="sum-label">請求合計（実績）</div><div class="sum-val">¥'+salesData.total.toLocaleString()+'</div>'+(pctTarget!=null?'<div class="kpi-sub">目標比 <span class="'+(pctTarget>=100?'pos':'neg')+'">'+pctTarget+'%</span></div>':'')+'</div>';
+    h+='<div class="sum-card"><div class="sum-label">入金合計</div><div class="sum-val" style="color:var(--ok)">¥'+(salesData.actual||0).toLocaleString()+'</div><div class="kpi-sub">回収率 <span class="'+(pctActual>=100?'pos':'neg')+'">'+pctActual+'%</span></div></div>';
+    h+='</div>';
+    if(salesMode==='yoy'){
+      var prevYr2=parseInt(salesYear)-1;
+      var prevKey2=salesMonth.replace(parseInt(salesYear)+'年',prevYr2+'年');
+      var prevData2=ALL_SALES[prevKey2];
+      if(prevData2&&prevData2.total>0){
+        var diff=salesData.total-prevData2.total;
+        var diffPct=Math.round(diff/prevData2.total*100);
+        h+='<div style="background:rgba(139,148,158,.08);border:1px solid rgba(139,148,158,.25);border-radius:10px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">';
+        h+='<div><div style="font-size:11px;color:var(--muted);">前年同月 ('+esc(prevKey2)+')</div><div style="font-size:16px;font-weight:700;">¥'+prevData2.total.toLocaleString()+'</div></div>';
+        h+='<div style="text-align:right;"><div style="font-size:22px;font-weight:700;color:'+(diff>=0?'var(--ok)':'var(--ng)')+';">'+(diff>=0?'+':'')+diff.toLocaleString()+'</div><div style="font-size:12px;color:var(--muted);">'+(diff>=0?'+':'')+diffPct+'%</div></div></div>';
+      }
+    }
+  }else{
+    var pctTarget2=target?Math.round(enrollTotal/target*100):null;
+    h+='<div class="sum-grid">';
+    h+='<div class="sum-card"><div class="sum-label">'+(isFuture?'見込み月額':'在籍月額合計')+'</div><div class="sum-val">¥'+enrollTotal.toLocaleString()+'</div>'+(pctTarget2!=null?'<div class="kpi-sub">目標比 <span class="'+(pctTarget2>=100?'pos':'neg')+'">'+pctTarget2+'%</span></div>':'')+'</div>';
+    h+='<div class="sum-card"><div class="sum-label">在籍生徒数</div><div class="sum-val">'+uids.length+'名</div></div>';
+    h+='</div>';
+    if(isFuture)h+='<div style="background:rgba(232,168,76,.08);border:1px solid rgba(232,168,76,.3);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--accent2);">この月はまだ実績データがありません。現在の在籍月額を表示しています。</div>';
+  }
+  if(target){
+    h+='<div style="background:rgba(240,201,122,.08);border:1px solid rgba(240,201,122,.25);border-radius:10px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">';
+    h+='<span style="font-size:13px;color:var(--muted);">月次目標</span><span style="font-size:16px;font-weight:700;color:var(--accent2);">¥'+target.toLocaleString()+'</span></div>';
+  }
+  h+='<div class="stitle">在籍コース一覧（月謝詳細）</div>';
+  if(active.length){
+    var byS={};
+    active.forEach(function(e){if(!byS[e.studentID]){var st=ALL_STUDENTS.find(function(s){return s.studentID===e.studentID;})||{};byS[e.studentID]={name:e.studentName,yomi:st.yomi||'',courses:[]};}byS[e.studentID].courses.push(e);});
+    var sids=Object.keys(byS).sort(function(a,b){return (byS[a].yomi||byS[a].name).localeCompare((byS[b].yomi||byS[b].name),'ja');});
+    h+='<table class="stbl"><thead><tr><th>氏名</th><th>コース</th><th style="text-align:right">月謝</th></tr></thead><tbody>';
+    sids.forEach(function(sid){
+      var s=byS[sid];
+      var sub=s.courses.reduce(function(sum,e){return sum+((e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0);},0);
+      s.courses.forEach(function(e,i){
+        var price=(e.overridePrice!==null&&e.overridePrice!==undefined&&e.overridePrice!=='')?parseFloat(e.overridePrice)||0:parseFloat(e.standardPrice)||0;
+        h+='<tr>';
+        if(i===0)h+='<td rowspan="'+s.courses.length+'" style="font-weight:700;vertical-align:top;">'+esc(s.name)+'</td>';
+        h+='<td>'+esc(e.courseName||e.courseID)+(e.overridePrice!=null?'<span style="font-size:10px;color:var(--accent);margin-left:4px;">上書</span>':'')+'</td>';
+        h+='<td class="td-r">¥'+price.toLocaleString()+'</td></tr>';
+      });
+      if(s.courses.length>1)h+='<tr><td></td><td style="font-size:11px;color:var(--muted);">小計</td><td class="td-r" style="color:var(--accent2);">¥'+sub.toLocaleString()+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }else{h+='<div class="empty">在籍データなし</div>';}
+  c.innerHTML=h;
+}
+
+function showToast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast '+(type||'')+' show';
+  clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},3500);
+}
+
+function _payKey(y,m){return 'bridge_pay_'+y+'_'+m;}
+function _initPayMonth(){
+  if(!window._payYear){var now=new Date();window._payYear=now.getFullYear();window._payMonth=now.getMonth()+1;}
+}
+function _updatePayLabel(){
+  var el=document.getElementById('pay-month-label');
+  if(el) el.textContent=window._payYear+'年'+window._payMonth+'月';
+}
+function changePayMonth(delta){
+  _initPayMonth();
+  window._payMonth+=delta;
+  if(window._payMonth>12){window._payMonth=1;window._payYear++;}
+  if(window._payMonth<1){window._payMonth=12;window._payYear--;}
+  _updatePayLabel();
+  loadPaymentForCurrentMonth();
+}
+function loadPaymentForCurrentMonth(){
+  _initPayMonth();
+  var y=window._payYear,m=window._payMonth;
+  _updatePayLabel();
+  window._payData={};
+  renderMgr();
+  fetch(PAYMENT_GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'getPaymentData',year:y,month:m})
+    }).then(function(r){return r.json();}).then(function(data){
+      var gasData={};
+      (data.payments||[]).forEach(function(p){
+        var paidVal=p.paid;
+        if(typeof paidVal==='string'){paidVal=(paidVal.toUpperCase()==='TRUE');}
+        else{paidVal=!!paidVal;}
+        gasData[p.studentID]=paidVal;
+      });
+      window._payData=gasData;
+      renderMgr();
+    }).catch(function(e){console.error('pay load',e);});
+}
+function togglePayment(sid,checked){
+  _initPayMonth();
+  var y=window._payYear,m=window._payMonth;
+  if(!window._payData)window._payData={};
+  window._payData[sid]=checked;
+  var student=ALL_STUDENTS.find(function(s){return s.studentID===sid;})||{};
+  var studentName=student.name||'';
+  fetch(PAYMENT_GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'savePaymentStatus',studentID:sid,studentName:studentName,year:y,month:m,paid:checked,isPaid:checked})
+  }).catch(function(e){console.error('pay save',e);});
+}
+</script>
+</body>
+</html>
