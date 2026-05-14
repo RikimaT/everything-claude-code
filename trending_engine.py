@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from typing import List, Dict
 import logging
-import feedparser
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -67,6 +67,9 @@ class TrendingEngine:
 
     def fetch_trending_topics(self):
         """Fetch trending topics from RSS feeds"""
+        import requests
+        from xml.etree import ElementTree as ET
+
         topics = {
             "education": [],
             "parenting": [],
@@ -77,21 +80,36 @@ class TrendingEngine:
         # Fetch from each feed
         for feed_name, feed_url in self.feeds.items():
             try:
-                feed = feedparser.parse(feed_url)
+                response = requests.get(feed_url, timeout=10)
+                response.encoding = 'utf-8'
 
                 category = self._categorize_feed(feed_name)
 
-                for entry in feed.entries[:10]:  # Get top 10 entries
-                    title = entry.get("title", "")
-                    summary = entry.get("summary", "")[:500]
+                # Parse RSS XML
+                root = ET.fromstring(response.content)
 
-                    topics[category].append({
-                        "title": title,
-                        "summary": summary,
-                        "source": feed_name
-                    })
+                # Extract items from RSS
+                items = root.findall('.//item')
+                for item in items[:10]:
+                    title_elem = item.find('title')
+                    desc_elem = item.find('description')
+                    summary_elem = item.find('summary')
 
-                logger.info(f"✓ Fetched from {feed_name}: {len(feed.entries)} items")
+                    title = title_elem.text if title_elem is not None and title_elem.text else ""
+                    summary = ""
+                    if desc_elem is not None and desc_elem.text:
+                        summary = desc_elem.text[:500]
+                    elif summary_elem is not None and summary_elem.text:
+                        summary = summary_elem.text[:500]
+
+                    if title:
+                        topics[category].append({
+                            "title": title,
+                            "summary": summary,
+                            "source": feed_name
+                        })
+
+                logger.info(f"✓ Fetched from {feed_name}: {len(items)} items")
 
             except Exception as e:
                 logger.warning(f"⚠ Failed to fetch {feed_name}: {e}")
