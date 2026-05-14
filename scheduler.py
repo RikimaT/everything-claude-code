@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from research_engine import ResearchEngine
 from post_generation_engine import PostGenerationEngine
 from optimal_time_engine import OptimalTimeEngine
+from buzz_learning_engine import BuzzLearningEngine
+from trending_engine import TrendingEngine, LocalNewsCollector
 
 load_dotenv()
 
@@ -26,6 +28,8 @@ class SNSScheduler:
         self.research_engine = ResearchEngine()
         self.post_gen = PostGenerationEngine()
         self.time_engine = OptimalTimeEngine()
+        self.buzz_engine = BuzzLearningEngine()
+        self.trending_engine = TrendingEngine()
         self.scheduled_posts = {}
 
     def schedule_daily_post(self, topic: str = None):
@@ -56,7 +60,30 @@ class SNSScheduler:
             logger.info(f"✓ Scheduled {platform} post for {next_time.strftime('%Y-%m-%d %H:%M')}")
 
     def _get_daily_topic(self) -> str:
-        """Get daily topic from predefined list or generate"""
+        """Get daily topic from trending, seasonal, or predefined list"""
+        import random
+
+        # Try to get trending topics
+        try:
+            trending_ideas = self.trending_engine.analyze_trending_for_post()
+            if trending_ideas:
+                # Use a trending topic with post angles
+                idea = trending_ideas[0]
+                if idea.get("post_angles"):
+                    return idea["post_angles"][0]
+        except Exception as e:
+            logger.warning(f"⚠️  Could not fetch trending: {e}")
+
+        # Try seasonal topics
+        try:
+            seasonal = LocalNewsCollector.get_seasonal_topics()
+            if seasonal:
+                selected = random.choice(seasonal)
+                return f"今月のテーマ「{selected}」について、親ができることは？"
+        except Exception as e:
+            logger.warning(f"⚠️  Could not get seasonal topics: {e}")
+
+        # Fall back to predefined topics
         topics = [
             "子どもが勉強に向き合う時、親ができることは？",
             "自学自習のスイッチを入れるには",
@@ -68,7 +95,6 @@ class SNSScheduler:
             "親のメンタル、塾の選び方",
         ]
 
-        import random
         return random.choice(topics)
 
     def _publish_post(self, platform: str, content: str, topic: str):
