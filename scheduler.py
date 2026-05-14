@@ -15,6 +15,7 @@ from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 
 from weekly_post_store import get_next_post, mark_post_used, get_remaining_posts
+from trending_engine import TrendingEngine, LocalNewsCollector
 
 load_dotenv()
 
@@ -94,9 +95,45 @@ class SNSScheduler:
     def __init__(self):
         self.scheduler = BlockingScheduler(timezone="Asia/Tokyo")
         self.publisher = MetaAPIPublisher()
+        self.trending_engine = TrendingEngine()
+        self._today_trends: list = []
+
+    def _refresh_trends(self):
+        """毎朝6時にトレンドを取得して当日の投稿に反映させるためキャッシュする"""
+        try:
+            self.trending_engine.fetch_trending_topics()
+            ideas = self.trending_engine.analyze_trending_for_post()
+            # 今月の季節ネタも追加
+            seasonal = LocalNewsCollector.get_seasonal_topics()
+            self._today_trends = [idea["title"] for idea in ideas[:3]] + seasonal[:2]
+            logger.info(f"📰 本日のトレンド更新: {self._today_trends[:3]}")
+        except Exception as e:
+            logger.warning(f"⚠️  トレンド取得失敗（投稿は続行）: {e}")
+            self._today_trends = LocalNewsCollector.get_seasonal_topics()[:3]
+
+    def _inject_trend(self, content: str) -> str:
+        """投稿内容にその日のトレンドを自然に追記する"""
+        if not self._today_trends:
+            return content
+
+        trend = self._today_trends[0]
+
+        # 投稿末尾がハッシュタグなら手前に追記、そうでなければ末尾に
+        lines = content.strip().split("\n")
+        hashtag_start = next(
+            (i for i, l in enumerate(lines) if l.strip().startswith("#")), None
+        )
+
+        trend_note = f"\n\n（今日は「{trend}」について考えながら書きました）"
+
+        if hashtag_start is not None:
+            lines.insert(hashtag_start, trend_note.strip())
+            return "\n".join(lines)
+        else:
+            return content + trend_note
 
     def _post_threads(self):
-        """Threads への定時投稿"""
+        """Threads への定時投稿（当日のトレンドを反映）"""
         post = get_next_post("threads")
         if not post:
             logger.warning("⚠️  Threads: 投稿ストックなし")
@@ -104,29 +141,37 @@ class SNSScheduler:
             logger.info(f"残り投稿数: {remaining}")
             return
 
+        # その日のトレンドを投稿に自然に織り込む
+        content = self._inject_trend(post["content"])
+
         logger.info(f"📤 Threads 投稿開始: {post['topic']}")
-        success = self.publisher.publish_to_threads(post["content"])
+        success = self.publisher.publish_to_threads(content)
 
         if success:
             mark_post_used(post["id"])
             logger.info(f"✅ 完了 (ID: {post['id']})")
 
     def _post_instagram(self):
-        """Instagram への定時投稿"""
+        """Instagram への定時投稿（当日のトレンドを反映）"""
         post = get_next_post("instagram")
         if not post:
             logger.warning("⚠️  Instagram: 投稿ストックなし")
             return
 
+        content = self._inject_trend(post["content"])
+
         logger.info(f"📤 Instagram 投稿開始: {post['topic']}")
-        success = self.publisher.publish_to_instagram(post["content"])
+        success = self.publisher.publish_to_instagram(content)
 
         if success:
             mark_post_used(post["id"])
             logger.info(f"✅ 完了 (ID: {post['id']})")
 
     def _check_stock(self):
-        """毎朝6時に投稿ストックを確認・アラート"""
+        """毎朝6時: トレンド更新 + 投稿ストック確認"""
+        # トレンドを先に更新（当日の9時投稿から反映される）
+        self._refresh_trends()
+
         remaining = get_remaining_posts()
         total = sum(remaining.values())
         logger.info(f"📊 投稿ストック確認: {remaining}")
@@ -175,6 +220,8 @@ class SNSScheduler:
     def start(self):
         """スケジューラーを起動（ブロッキング）"""
         self.setup_jobs()
+        # 起動時にもトレンドを取得しておく
+        self._refresh_trends()
         remaining = get_remaining_posts()
         logger.info(f"📦 現在の投稿ストック: {remaining}")
 
