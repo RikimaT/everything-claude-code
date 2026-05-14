@@ -38,6 +38,51 @@ class MetaAPIPublisher:
         self.instagram_account_id = os.getenv("INSTAGRAM_ACCOUNT_ID")
         self.threads_user_id = os.getenv("THREADS_USER_ID")
 
+        # THREADS_USER_ID が未設定の場合、トークンから自動取得して保存
+        if self.access_token and not self.threads_user_id:
+            self.threads_user_id = self._fetch_and_save_user_id()
+
+    def _fetch_and_save_user_id(self) -> Optional[str]:
+        """トークンからThreadsユーザーIDを自動取得して.envに保存"""
+        try:
+            r = requests.get(
+                "https://graph.threads.net/v1.0/me",
+                params={"fields": "id,username", "access_token": self.access_token},
+                timeout=10
+            )
+            data = r.json()
+            if "id" in data:
+                user_id = data["id"]
+                username = data.get("username", "")
+                logger.info(f"✅ ThreadsユーザーID自動取得: {user_id} (@{username})")
+
+                # .envに追記
+                env_path = os.path.join(os.path.dirname(__file__), ".env")
+                lines = []
+                if os.path.exists(env_path):
+                    with open(env_path, "r") as f:
+                        lines = f.readlines()
+
+                updated = False
+                for i, line in enumerate(lines):
+                    if line.startswith("THREADS_USER_ID="):
+                        lines[i] = f"THREADS_USER_ID={user_id}\n"
+                        updated = True
+                        break
+                if not updated:
+                    lines.append(f"THREADS_USER_ID={user_id}\n")
+
+                with open(env_path, "w") as f:
+                    f.writelines(lines)
+
+                return user_id
+            else:
+                logger.error(f"❌ ユーザーID取得失敗: {data}")
+                return None
+        except Exception as e:
+            logger.error(f"❌ ユーザーID取得エラー: {e}")
+            return None
+
     def publish_to_threads(self, content: str) -> bool:
         """Threads に投稿する"""
         if not self.access_token or not self.threads_user_id:
