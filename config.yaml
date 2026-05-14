@@ -1,0 +1,94 @@
+# Bridge SNS Auto-Posting Configuration
+
+# Platform settings
+platforms:
+  x:
+    enabled: true
+    max_length: 280
+    posting_frequency: daily
+    post_time_strategy: optimal
+    hashtags:
+      - "#ブリッジ"
+      - "#教育"
+      - "#親応援"
+      - "#子どもの成長"
+      - "#彦根"
+
+  threads:
+    enabled: true
+    max_length: 500
+    posting_frequency: daily
+    post_time_strategy: optimal
+    hashtags:
+      - "#ブリッジ"
+      - "#総合学習"
+
+  instagram:
+    enabled: true
+    max_length: 2200
+    posting_frequency: daily
+    post_time_strategy: optimal
+    hashtags:
+      - "#ブリッジ"
+      - "#総合学習塾"
+      - "#親子"
+      - "#子育て"
+      - "#教育"
+      - "#彦根"
+      - "#稲枝"
+      - "#学習塾"
+
+# Content generation settings
+generation:
+  model: "claude-opus-4-7"
+  temperature: 0.7
+  max_tokens: 1024
+
+  # Style emphasis
+  style_weights:
+    emotional: 0.25
+    teaching: 0.25
+    empathy: 0.20
+    action: 0.15
+    story: 0.10
+    question: 0.05
+
+# Scheduling settings
+scheduling:
+  daily_post_time: "06:00"  # UTC
+  posts_per_day: 1
+  randomize_timing: true
+  timing_variance_minutes: 30
+
+# Research data sources
+research:
+  website_urls:
+    - "https://bridge-inae.hp.peraichi.com"
+    - "https://rikima81.com"
+    - "https://note.com/rikima81+4"
+
+  sns_accounts:
+    instagram: "bridge_inae"
+    threads: "maroge_0801"
+    ameblo: "rikima81"
+
+  update_frequency_days: 7
+
+# Analytics
+analytics:
+  track_engagement: true
+  engagement_weights:
+    likes: 1.0
+    comments: 2.0
+    shares: 3.0
+    saves: 1.5
+
+  export_reports: true
+  report_frequency: "weekly"
+
+# Logging
+logging:
+  level: "INFO"
+  file: "snsposter.log"
+  max_file_size_mb: 10
+  backup_count: 5
