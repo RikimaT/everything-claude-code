@@ -30,6 +30,7 @@ build/
 *.db
 bridge_data.db
 *.json
+!weekly_posts.json
 style_profile.json
 published_posts.json
 *_schedule.json
