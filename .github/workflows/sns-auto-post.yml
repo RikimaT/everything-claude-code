@@ -1,0 +1,92 @@
+name: SNS Auto Post
+
+on:
+  schedule:
+    # JST = UTC + 9 (cron times below are UTC)
+    - cron: '0 0 * * *'        # Threads 09:00 JST
+    - cron: '0 5 * * *'        # Threads 14:00 JST
+    - cron: '0 12 * * *'       # Threads 21:00 JST
+    - cron: '0 3 * * 0,1,3,5'  # Instagram 12:00 JST (Sun/Mon/Wed/Fri)
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to post to'
+        required: true
+        default: 'threads'
+        type: choice
+        options:
+          - threads
+          - instagram
+
+jobs:
+  threads:
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.platform == 'threads'
+      || github.event.schedule == '0 0 * * *'
+      || github.event.schedule == '0 5 * * *'
+      || github.event.schedule == '0 12 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Post to Threads
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+        run: python scheduler.py --test-threads
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: threads-log-${{ github.run_id }}
+          path: snsposter.log
+          retention-days: 14
+      - name: Commit weekly_posts.json usage state
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain weekly_posts.json)" ]; then
+            git add weekly_posts.json
+            git commit -m "chore(bot): mark threads post used"
+            git push
+          fi
+
+  instagram:
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.platform == 'instagram'
+      || github.event.schedule == '0 3 * * 0,1,3,5'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Post to Instagram
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+        run: python scheduler.py --test-instagram
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-log-${{ github.run_id }}
+          path: snsposter.log
+          retention-days: 14
+      - name: Commit weekly_posts.json usage state
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain weekly_posts.json)" ]; then
+            git add weekly_posts.json
+            git commit -m "chore(bot): mark instagram post used"
+            git push
+          fi
