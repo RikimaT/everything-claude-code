@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>自習室 入退室打刻</title>
+  <style>
+    /* ===== リセット & ベース ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #F0F4F8;
+      color: #2D3748;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* ===== 登録画面 ===== */
+    #registerScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    #registerScreen .logo {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+    #registerScreen h1 {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      color: #1A202C;
+      margin-bottom: 8px;
+    }
+    #registerScreen p {
+      font-size: 15px;
+      color: #718096;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    }
+    .field-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4A5568;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .text-input {
+      width: 100%;
+      padding: 16px;
+      font-size: 20px;
+      border: 2px solid #E2E8F0;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color .2s;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .text-input:focus { border-color: #667EEA; }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 18px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      letter-spacing: 1px;
+    }
+    .btn-primary:active { opacity: .85; transform: scale(.98); }
+
+    /* ===== メイン打刻画面 ===== */
+    #mainScreen {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .top-bar .title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #2D3748;
+    }
+    .student-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 2px solid #E2E8F0;
+      border-radius: 999px;
+      padding: 6px 14px 6px 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4A5568;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .student-chip:hover { border-color: #667EEA; }
+    .student-chip .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667EEA, #764BA2);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+    }
+
+    /* 時計 */
+    .clock-area {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .clock-time {
+      font-size: 54px;
+      font-weight: 800;
+      color: #1A202C;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 16px;
+      color: #718096;
+      margin-top: 4px;
+    }
+
+    /* 巨大ボタンエリア */
+    .punch-area {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+    .punch-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 4px;
+      transition: transform .1s, box-shadow .1s;
+      min-height: 160px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.15);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .punch-btn:active {
+      transform: scale(.96);
+      box-shadow: 0 2px 12px rgba(0,0,0,.10);
+    }
+    .punch-btn .btn-icon { font-size: 52px; line-height: 1; }
+    .punch-btn .btn-label { font-size: 32px; color: #fff; }
+    .punch-btn .btn-sub { font-size: 14px; color: rgba(255,255,255,.8); font-weight: 500; letter-spacing: 1px; }
+
+    .btn-enter {
+      background: linear-gradient(145deg, #2ECC71 0%, #27AE60 100%);
+    }
+    .btn-exit {
+      background: linear-gradient(145deg, #E74C3C 0%, #C0392B 100%);
+    }
+
+    /* ===== オーバーレイ (送信中・完了・エラー) ===== */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #overlay.show { display: flex; }
+    .overlay-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 28px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(0,0,0,.25);
+      animation: popIn .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(.7); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    .overlay-icon { font-size: 64px; line-height: 1; margin-bottom: 16px; }
+    .overlay-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .overlay-msg {
+      font-size: 16px;
+      color: #718096;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .overlay-time {
+      font-size: 14px;
+      font-weight: 600;
+      color: #A0AEC0;
+      margin-bottom: 24px;
+    }
+    .btn-close {
+      display: inline-block;
+      padding: 14px 40px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: #4A5568;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-close:hover { background: #2D3748; }
+
+    /* ===== ローディング ===== */
+    #loadingOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.8);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #loadingOverlay.show { display: flex; }
+    .spinner {
+      width: 52px; height: 52px;
+      border: 5px solid #E2E8F0;
+      border-top-color: #667EEA;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 16px; font-weight: 600; color: #4A5568; }
+
+    /* ===== エラー色 ===== */
+    .overlay-card.error .overlay-title { color: #E53E3E; }
+    .overlay-card.success-enter .overlay-title { color: #27AE60; }
+    .overlay-card.success-exit .overlay-title { color: #E74C3C; }
+  </style>
+</head>
+<body>
+
+<!-- ===================== 登録画面 ===================== -->
+<div id="registerScreen">
+  <div class="logo">🏫</div>
+  <h1>自習室 入退室システム</h1>
+  <p>初回のみ生徒IDを入力してください。<br>次回からは自動的にスキップされます。</p>
+  <div class="card">
+    <label class="field-label" for="studentIdInput">生徒ID</label>
+    <input
+      id="studentIdInput"
+      class="text-input"
+      type="text"
+      placeholder="例: S001"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    >
+    <div id="registerError" style="color:#E53E3E;font-size:14px;margin-top:10px;display:none;"></div>
+    <button class="btn-primary" onclick="saveStudentId()">保存して打刻画面へ →</button>
+  </div>
+</div>
+
+<!-- ===================== メイン打刻画面 ===================== -->
+<div id="mainScreen">
+  <div class="top-bar">
+    <div class="title">🏫 自習室</div>
+    <div class="student-chip" onclick="changeStudent()" title="生徒IDを変更">
+      <div class="avatar" id="avatarInitial">？</div>
+      <span id="studentNameDisplay">---</span>
+    </div>
+  </div>
+
+  <div class="clock-area">
+    <div class="clock-time" id="clockTime">00:00:00</div>
+    <div class="clock-date" id="clockDate">--- --- ---</div>
+  </div>
+
+  <div class="punch-area">
+    <button class="punch-btn btn-enter" onclick="punch('入室')">
+      <div class="btn-icon">✅</div>
+      <div class="btn-label">入　室</div>
+      <div class="btn-sub">タップして入室を記録</div>
+    </button>
+    <button class="punch-btn btn-exit" onclick="punch('退室')">
+      <div class="btn-icon">👋</div>
+      <div class="btn-label">退　室</div>
+      <div class="btn-sub">タップして退室を記録</div>
+    </button>
+  </div>
+</div>
+
+<!-- ===================== ローディング ===================== -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">送信中...</div>
+</div>
+
+<!-- ===================== 結果オーバーレイ ===================== -->
+<div id="overlay">
+  <div class="overlay-card" id="overlayCard">
+    <div class="overlay-icon" id="overlayIcon"></div>
+    <div class="overlay-title" id="overlayTitle"></div>
+    <div class="overlay-msg" id="overlayMsg"></div>
+    <div class="overlay-time" id="overlayTime"></div>
+    <button class="btn-close" onclick="closeOverlay()">閉じる</button>
+  </div>
+</div>
+
+<script>
+  // ===== 設定 =====
+  // GASウェブアプリをデプロイした後、URLをここに設定してください
+  // （このhtmlファイル自体がGASでホストされる場合は空文字のままでOK）
+  var GAS_URL = '';
+
+  var STORAGE_KEY = 'nfc_room_student_id';
+  var DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
+
+  // ===== 起動処理 =====
+  (function init() {
+    var savedId = localStorage.getItem(STORAGE_KEY);
+    if (savedId) {
+      showMainScreen(savedId);
+    } else {
+      document.getElementById('registerScreen').style.display = 'flex';
+    }
+    startClock();
+  })();
+
+  // ===== 登録 =====
+  function saveStudentId() {
+    var input = document.getElementById('studentIdInput');
+    var id = input.value.trim();
+    var errEl = document.getElementById('registerError');
+
+    if (!id) {
+      errEl.textContent = '生徒IDを入力してください。';
+      errEl.style.display = 'block';
+      input.focus();
+      return;
+    }
+    errEl.style.display = 'none';
+    localStorage.setItem(STORAGE_KEY, id);
+    showMainScreen(id);
+  }
+
+  // Enter キーで保存
+  document.getElementById('studentIdInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') saveStudentId();
+  });
+
+  // ===== メイン画面表示 =====
+  function showMainScreen(studentId) {
+    document.getElementById('registerScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'flex';
+    document.getElementById('studentNameDisplay').textContent = studentId;
+    var initial = studentId.charAt(0).toUpperCase();
+    document.getElementById('avatarInitial').textContent = initial;
+  }
+
+  // ===== 生徒ID変更 =====
+  function changeStudent() {
+    if (!confirm('生徒IDを変更しますか？')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById('studentIdInput').value = '';
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('registerScreen').style.display = 'flex';
+    setTimeout(function() {
+      document.getElementById('studentIdInput').focus();
+    }, 100);
+  }
+
+  // ===== 打刻送信 =====
+  function punch(action) {
+    var studentId = localStorage.getItem(STORAGE_KEY);
+    if (!studentId) {
+      showOverlay('error', '⚠️', 'エラー', '生徒IDが見つかりません。ページを再読み込みしてください。', '');
+      return;
+    }
+
+    showLoading(true);
+
+    var payload = JSON.stringify({ studentId: studentId, action: action });
+
+    // GASウェブアプリURL（同一ファイルならば google.script.run を使う）
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      // GASホスト環境（google.script.run 利用）
+      google.script.run
+        .withSuccessHandler(function(res) {
+          showLoading(false);
+          handleResponse(res, action);
+        })
+        .withFailureHandler(function(err) {
+          showLoading(false);
+          showOverlay('error', '⚠️', '通信エラー', err.message || '送信に失敗しました。', '');
+        })
+        .handlePunch(JSON.parse(payload));
+    } else {
+      // 外部URL経由（fetch）
+      var url = GAS_URL || window.location.href.split('?')[0];
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: payload
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        showLoading(false);
+        handleResponse(data, action);
+      })
+      .catch(function(err) {
+        showLoading(false);
+        showOverlay('error', '⚠️', '通信エラー',
+          'サーバーに接続できませんでした。\nWi-Fi / 通信環境を確認してください。', '');
+      });
+    }
+  }
+
+  function handleResponse(data, action) {
+    if (data.success) {
+      var isEnter = (action === '入室');
+      showOverlay(
+        isEnter ? 'success-enter' : 'success-exit',
+        isEnter ? '✅' : '👋',
+        data.studentName + ' さん\n' + action + 'しました！',
+        data.message || '',
+        data.timestamp || ''
+      );
+    } else {
+      showOverlay('error', '⚠️', 'エラー', data.message || '不明なエラーが発生しました。', '');
+    }
+  }
+
+  // ===== オーバーレイ制御 =====
+  function showOverlay(type, icon, title, msg, time) {
+    var card = document.getElementById('overlayCard');
+    card.className = 'overlay-card ' + type;
+    document.getElementById('overlayIcon').textContent = icon;
+    document.getElementById('overlayTitle').textContent = title;
+    document.getElementById('overlayMsg').textContent = msg;
+    document.getElementById('overlayTime').textContent = time ? '記録日時: ' + time : '';
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function closeOverlay() {
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // 背景クリックで閉じる
+  document.getElementById('overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeOverlay();
+  });
+
+  // ===== ローディング =====
+  function showLoading(show) {
+    var el = document.getElementById('loadingOverlay');
+    if (show) el.classList.add('show');
+    else       el.classList.remove('show');
+  }
+
+  // ===== リアルタイム時計 =====
+  function startClock() {
+    function update() {
+      var now = new Date();
+      var hh = String(now.getHours()).padStart(2, '0');
+      var mm = String(now.getMinutes()).padStart(2, '0');
+      var ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clockTime').textContent = hh + ':' + mm + ':' + ss;
+
+      var y  = now.getFullYear();
+      var mo = now.getMonth() + 1;
+      var d  = now.getDate();
+      var wd = DAY_NAMES[now.getDay()];
+      document.getElementById('clockDate').textContent =
+        y + '年' + mo + '月' + d + '日（' + wd + '）';
+    }
+    update();
+    setInterval(update, 1000);
+  }
+</script>
+</body>
+</html>
