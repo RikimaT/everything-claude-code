@@ -7,14 +7,15 @@ import os
 import sys
 
 APP_ID = "1497785435190397"
-REDIRECT_URI = "http://localhost:8080"
+REDIRECT_URI = "https://oauth.pstmn.io/v1/callback"
 SCOPE = "threads_basic,threads_content_publish"
 
+import urllib.parse
 auth_url = (
     f"https://threads.net/oauth/authorize"
     f"?client_id={APP_ID}"
-    f"&redirect_uri=http%3A%2F%2Flocalhost%3A8080"
-    f"&scope={SCOPE}"
+    f"&redirect_uri={urllib.parse.quote(REDIRECT_URI, safe='')}"
+    f"&scope={urllib.parse.quote(SCOPE, safe='')}"
     f"&response_type=code"
 )
 
@@ -26,15 +27,14 @@ print("【STEP 1】以下のURLをブラウザ（Safari）で開いてくださ�
 print()
 print(auth_url)
 print()
-print("→ ログイン・許可後、ブラウザが localhost:8080 に移動して")
-print("  エラーになります。それでOKです。")
-print("  URLバーに表示されているURLをコピーしてください。")
-print("  例: http://localhost:8080/?code=XXXXXXXX#_")
+print("→ ログイン・許可後、Postman のコールバックページが開き、")
+print("  Authorization code が表示されます。")
+print("  そのコード（または page の URL 全体）をコピーしてください。")
+print("  例: https://oauth.pstmn.io/v1/callback?code=XXXXXXXX")
 print()
 
 redirect_url = input("【STEP 2】リダイレクト後のURLを貼り付けてください:\n> ").strip()
 
-import urllib.parse
 parsed = urllib.parse.urlparse(redirect_url)
 params = urllib.parse.parse_qs(parsed.query)
 code = params.get("code", [None])[0]
