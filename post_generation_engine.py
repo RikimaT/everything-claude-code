@@ -8,6 +8,8 @@ import random
 from typing import List, Dict
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from buzz_learning_engine import BuzzLearningEngine
+from trending_engine import TrendingEngine
 
 load_dotenv()
 
@@ -17,6 +19,8 @@ class PostGenerationEngine:
         self.model = "claude-opus-4-7"
         self.style_profile = self.load_style_profile()
         self.bridge_character = self._build_bridge_character()
+        self.buzz_engine = BuzzLearningEngine()
+        self.trending_engine = TrendingEngine()
 
     def load_style_profile(self) -> Dict:
         """Load style profile from analysis"""
@@ -47,6 +51,55 @@ class PostGenerationEngine:
 - 子どもの「伸びしろ診断」など実践的なコンテンツ
 """
         return profile_str
+
+    def get_buzz_insights(self, platform: str) -> Dict:
+        """Get current buzz insights for a platform"""
+        try:
+            return self.buzz_engine.get_buzz_insights(platform)
+        except Exception as e:
+            print(f"⚠️  Failed to get buzz insights: {e}")
+            return {"top_structures": {}, "top_keywords": {}}
+
+    def get_trending_ideas(self) -> List[Dict]:
+        """Get current trending ideas and topics"""
+        try:
+            return self.trending_engine.analyze_trending_for_post()
+        except Exception as e:
+            print(f"⚠️  Failed to get trending ideas: {e}")
+            return []
+
+    def _format_buzz_context(self, platform: str) -> str:
+        """Format buzz insights for prompt context"""
+        insights = self.get_buzz_insights(platform)
+        if not insights.get("top_structures") and not insights.get("top_keywords"):
+            return ""
+
+        context = "\n【現在バズっている投稿パターン】\n"
+
+        top_structures = insights.get("top_structures", {})
+        if top_structures:
+            context += f"最も効果的な構造: {', '.join(list(top_structures.keys())[:3])}\n"
+
+        top_keywords = insights.get("top_keywords", {})
+        if top_keywords:
+            context += f"エンゲージメント高キーワード: {', '.join(list(top_keywords.keys())[:5])}\n"
+
+        return context
+
+    def _format_trending_context(self) -> str:
+        """Format trending topics for prompt context"""
+        ideas = self.get_trending_ideas()
+        if not ideas:
+            return ""
+
+        context = "\n【現在のトレンド・時事ネタ】\n"
+        for idea in ideas[:3]:
+            context += f"- {idea['title']}\n"
+            angles = idea.get("post_angles", [])
+            if angles:
+                context += f"  提案角度: {angles[0]}\n"
+
+        return context
 
     def generate_post(self, topic: str, platform: str = "all") -> Dict[str, str]:
         """Generate post content for specified platform"""
@@ -82,6 +135,7 @@ class PostGenerationEngine:
 - 「なぜ？」という問いかけで深掘り
 - ストーリーと具体例を交える
 - 行動喚起（体験授業など）は控えめ
+{self._format_buzz_context(platform)}{self._format_trending_context()}
 
 【生成するプラットフォーム】
 {platform}
